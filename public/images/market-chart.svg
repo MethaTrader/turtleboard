@@ -1,0 +1,19 @@
+<!-- public/images/market-chart.svg -->
+<svg width="800" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+    <!-- Green Line (Sell) -->
+    <path d="M0,120 C50,80 100,150 150,100 C200,50 250,140 300,90 C350,40 400,120 450,70 C500,20 550,180 600,130 C650,80 700,120 750,120 L800,120"
+          stroke="#00DEA3" stroke-width="3" fill="none" />
+
+    <!-- Blue Line (Buy) -->
+    <path d="M0,140 C50,110 100,170 150,130 C200,90 250,160 300,120 C350,80 400,150 450,110 C500,70 550,200 600,160 C650,120 700,140 750,140 L800,140"
+          stroke="#5A55D2" stroke-width="3" fill="none" />
+
+    <!-- Data Point -->
+    <circle cx="450" cy="70" r="6" fill="#00DEA3" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- Data Label -->
+    <text x="450" y="50" font-family="Arial" font-size="12" text-anchor="middle" fill="#11142D">$376</text>
+
+    <!-- Time Label -->
+    <text x="450" y="220" font-family="Arial" font-size="10" text-anchor="middle" fill="#808191">3:59AM</text>
+</svg>

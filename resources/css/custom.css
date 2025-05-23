@@ -1,0 +1,116 @@
+/* resources/css/custom.css */
+@layer components {
+    /* Theme Variables */
+    :root {
+        --primary-color: #00DEA3;
+        --secondary-color: #5A55D2;
+        --background-color: #EFF3FD;
+        --card-color: #FFFFFF;
+        --sidebar-color: #FFFFFF;
+        --text-primary: #11142D;
+        --text-secondary: #808191;
+        --chart-green: #00DEA3;
+        --chart-blue: #5A55D2;
+    }
+
+    /* Card Styles */
+    .account-card {
+        @apply bg-white rounded-xl p-6 shadow-sm transition-all duration-300 relative overflow-hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .account-card:hover {
+        @apply transform -translate-y-1;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-icon {
+        @apply transition-transform duration-300;
+    }
+
+    .account-card:hover .card-icon {
+        @apply transform scale-110;
+    }
+
+    /* Sidebar Styling */
+    .sidebar-item {
+        @apply flex items-center px-4 py-3 text-gray-700 rounded-md transition-colors relative;
+    }
+
+    .sidebar-item:hover {
+        @apply bg-[#EFF3FD] text-[#00DEA3];
+    }
+
+    .sidebar-item.active {
+        @apply bg-[#EFF3FD] text-[#5A55D2] font-medium;
+    }
+
+    .sidebar-item.active::before {
+        content: '';
+        @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#00DEA3] rounded-r;
+    }
+
+    /* Balance Card */
+    .balance-card {
+        @apply rounded-xl text-white relative overflow-hidden;
+        background: linear-gradient(135deg, #5A55D2 0%, #7A76E6 100%);
+        box-shadow: 0 10px 25px rgba(90, 85, 210, 0.3);
+    }
+
+    .credit-card {
+        background: rgba(255, 255, 255, 0.1);
+        @apply rounded-xl p-4 mt-4;
+        backdrop-filter: blur(5px);
+    }
+
+    /* Status Tags */
+    .status-tag {
+        @apply px-3 py-1 rounded-full text-xs font-medium;
+    }
+
+    .status-completed {
+        @apply bg-[#00DEA3]/10 text-[#00DEA3];
+    }
+
+    .status-pending {
+        @apply bg-[#5A55D2]/10 text-[#5A55D2];
+    }
+
+    /* Turtle Icon */
+    .turtle-icon {
+        @apply w-10 h-10 rounded-full flex items-center justify-center bg-[#00DEA3] relative;
+    }
+
+    /* Chart Tabs */
+    .chart-tab {
+        @apply px-4 py-1 rounded-full text-sm transition-all duration-200;
+    }
+
+    .chart-tab.active {
+        @apply bg-[#00DEA3] text-white;
+    }
+
+    .chart-tab:not(.active) {
+        @apply border border-gray-200 text-[#808191] hover:bg-[#00DEA3]/10;
+    }
+
+    /* Animation Classes */
+    .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+}

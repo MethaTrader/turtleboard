@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EmailAccountController;
+use App\Http\Controllers\EmailGeneratorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+
+Route::get('/api/generate-email', [EmailGeneratorController::class, 'generate']);
 
 Route::get('/', function () {
     return view('welcome');

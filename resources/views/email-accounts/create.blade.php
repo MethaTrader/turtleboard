@@ -58,19 +58,25 @@
                     </div>
                 </div>
 
-                <form action="{{ route('accounts.email.store') }}" method="POST" @submit.prevent="submitForm">
+                <form action="{{ route('accounts.email.store') }}" method="POST" x-ref="mainForm">
                     @csrf
-                    <input type="hidden" name="step" :value="stepNames[currentStep-1]">
+
+                    <!-- Hidden fields to ensure all data is submitted -->
+                    <input type="hidden" name="provider" :value="formData.provider">
+                    <input type="hidden" name="email_address" :value="formData.email_address">
+                    <input type="hidden" name="password" :value="formData.password">
+                    <input type="hidden" name="proxy_id" :value="formData.proxy_id || ''">
+                    <input type="hidden" name="status" :value="formData.status">
 
                     <!-- Step 1: Select Provider -->
-                    <div x-show="currentStep === 1">
+                    <div x-show="currentStep === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform -translate-x-4">
                         <h3 class="text-lg font-semibold mb-4">Select Email Provider</h3>
                         <p class="text-text-secondary mb-6">Choose the email service provider for your account.</p>
 
                         <div class="grid grid-cols-2 gap-4 mb-6">
                             @foreach($providers as $provider)
                                 <div class="relative">
-                                    <input type="radio" id="provider_{{ $provider }}" name="provider" value="{{ $provider }}"
+                                    <input type="radio" id="provider_{{ $provider }}" value="{{ $provider }}"
                                            class="hidden peer" x-model="formData.provider">
                                     <label for="provider_{{ $provider }}"
                                            class="block border-2 rounded-lg p-4 cursor-pointer transition-all
@@ -113,7 +119,7 @@
                     </div>
 
                     <!-- Step 2: Enter Email Address -->
-                    <div x-show="currentStep === 2">
+                    <div x-show="currentStep === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform -translate-x-4">
                         <h3 class="text-lg font-semibold mb-4">Enter Email Address</h3>
                         <p class="text-text-secondary mb-6">Please provide the email address for your <span x-text="formData.provider"></span> account.</p>
 
@@ -123,16 +129,16 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-envelope text-gray-400"></i>
                                 </div>
-                                <input type="email" id="email_address" name="email_address" x-model="formData.email_address"
+                                <input type="email" id="email_address" x-model="formData.email_address"
                                        class="block w-full pl-10 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
-                                       placeholder="example@{{ formData.provider.toLowerCase() }}.com">
+                                       :placeholder="'example@' + (formData.provider ? formData.provider.toLowerCase() : 'provider') + '.com'">
                             </div>
                             <div class="text-red-500 text-sm mt-2" x-show="errors.email_address" x-text="errors.email_address"></div>
                         </div>
                     </div>
 
                     <!-- Step 3: Enter Password -->
-                    <div x-show="currentStep === 3">
+                    <div x-show="currentStep === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform -translate-x-4">
                         <h3 class="text-lg font-semibold mb-4">Enter Password</h3>
                         <p class="text-text-secondary mb-6">Please provide the password for <span x-text="formData.email_address"></span>.</p>
 
@@ -142,8 +148,8 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-lock text-gray-400"></i>
                                 </div>
-                                <input type="password" id="password" name="password" x-model="formData.password"
-                                       class="block w-full pl-10 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
+                                <input type="password" id="password" x-model="formData.password"
+                                       class="block w-full pl-10 pr-10 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
                                        placeholder="Enter your password">
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" @click="togglePassword">
                                     <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'" title="Toggle password visibility"></i>
@@ -154,7 +160,7 @@
 
                         <div class="mb-6">
                             <label for="proxy_id" class="block text-sm font-medium text-text-secondary mb-1">Proxy (Optional)</label>
-                            <select id="proxy_id" name="proxy_id" x-model="formData.proxy_id"
+                            <select id="proxy_id" x-model="formData.proxy_id"
                                     class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
                                 <option value="">No Proxy</option>
                                 @foreach($availableProxies as $proxy)
@@ -191,8 +197,13 @@
                                     @click="finalSubmit"
                                     x-show="currentStep === 3"
                                     class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-button focus:outline-none"
-                                    :disabled="loading"
-                                    x-html="loading ? '<i class=\'fas fa-spinner fa-spin mr-2\'></i> Saving...' : '<i class=\'fas fa-save mr-2\'></i> Save Account'">
+                                    :disabled="loading">
+                                <span x-show="!loading">
+                                    <i class="fas fa-save mr-2"></i> Save Account
+                                </span>
+                                <span x-show="loading">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -207,7 +218,6 @@
         function emailAccountForm() {
             return {
                 currentStep: 1,
-                stepNames: ['provider', 'email', 'password'],
                 formData: {
                     provider: '',
                     email_address: '',
@@ -224,12 +234,15 @@
                 },
 
                 nextStep() {
+                    // Clear previous errors
+                    this.errors = {};
+
+                    // Validate current step
                     if (this.currentStep === 1) {
                         if (!this.formData.provider) {
                             this.errors.provider = 'Please select an email provider.';
                             return;
                         }
-                        this.errors.provider = '';
                     } else if (this.currentStep === 2) {
                         if (!this.formData.email_address) {
                             this.errors.email_address = 'Please enter an email address.';
@@ -239,15 +252,19 @@
                             this.errors.email_address = 'Please enter a valid email address.';
                             return;
                         }
-                        this.errors.email_address = '';
                     }
 
-                    this.currentStep++;
+                    // Move to next step
+                    if (this.currentStep < 3) {
+                        this.currentStep++;
+                    }
                 },
 
                 prevStep() {
                     if (this.currentStep > 1) {
                         this.currentStep--;
+                        // Clear errors when going back
+                        this.errors = {};
                     }
                 },
 
@@ -259,71 +276,35 @@
                 togglePassword() {
                     this.showPassword = !this.showPassword;
                     const passwordInput = document.getElementById('password');
-                    passwordInput.type = this.showPassword ? 'text' : 'password';
-                },
-
-                async validateStep(step) {
-                    this.errors = {};
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('_token', document.querySelector('input[name="_token"]').value);
-                    formData.append('step', this.stepNames[step-1]);
-
-                    if (step >= 1) formData.append('provider', this.formData.provider);
-                    if (step >= 2) formData.append('email_address', this.formData.email_address);
-                    if (step >= 3) {
-                        formData.append('password', this.formData.password);
-                        if (this.formData.proxy_id) formData.append('proxy_id', this.formData.proxy_id);
-                        formData.append('status', this.formData.status);
-                    }
-
-                    try {
-                        const response = await fetch("{{ route('accounts.email.store') }}", {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                            }
-                        });
-
-                        const data = await response.json();
-
-                        if (!response.ok) {
-                            if (data.errors) {
-                                this.errors = data.errors;
-                                return false;
-                            }
-                        }
-
-                        return true;
-                    } catch (error) {
-                        console.error('Validation error:', error);
-                        return false;
+                    if (passwordInput) {
+                        passwordInput.type = this.showPassword ? 'text' : 'password';
                     }
                 },
 
                 async finalSubmit() {
+                    // Clear previous errors
+                    this.errors = {};
+
+                    // Validate final step
                     if (!this.formData.password) {
                         this.errors.password = 'Please enter a password.';
                         return;
                     }
 
+                    if (this.formData.password.length < 6) {
+                        this.errors.password = 'Password must be at least 6 characters.';
+                        return;
+                    }
+
                     this.loading = true;
 
-                    // Validate before final submission
-                    const isValid = await this.validateStep(3);
-
-                    if (isValid) {
+                    try {
                         // Submit the form
-                        document.querySelector('form').submit();
-                    } else {
+                        this.$refs.mainForm.submit();
+                    } catch (error) {
+                        console.error('Submission error:', error);
                         this.loading = false;
                     }
-                },
-
-                submitForm(event) {
-                    // This is handled by finalSubmit
                 }
             }
         }

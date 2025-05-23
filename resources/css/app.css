@@ -25,7 +25,7 @@
     }
 
     .sidebar-item:hover {
-        @apply bg-background text-primary;
+        @apply bg-background text-secondary;
     }
 
     .sidebar-item.active {
@@ -34,7 +34,7 @@
 
     .sidebar-item.active::before {
         content: '';
-        @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r;
+        @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-secondary rounded-r;
     }
 
     /* Balance Card */

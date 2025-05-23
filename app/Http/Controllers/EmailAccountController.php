@@ -6,6 +6,7 @@ use App\Http\Requests\EmailAccountRequest;
 use App\Models\EmailAccount;
 use App\Models\Proxy;
 use App\Services\EmailAccountService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -84,8 +85,10 @@ class EmailAccountController extends Controller
     public function store(EmailAccountRequest $request)
     {
         try {
-            $this->emailAccountService->create($request->validated());
-            return redirect()->route('accounts.email')->with('success', 'Email account created successfully.');
+            $emailAccount = $this->emailAccountService->create($request->validated());
+            return redirect()->route('accounts.email')
+                ->with('success', 'Email account created successfully.')
+                ->with('created_account_id', $emailAccount->id);
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Error creating email account: ' . $e->getMessage());
         }
@@ -144,6 +147,34 @@ class EmailAccountController extends Controller
             return redirect()->route('accounts.email')->with('success', 'Email account deleted successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error deleting email account: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get decrypted credentials for an email account.
+     *
+     * @param EmailAccount $emailAccount
+     * @return JsonResponse
+     */
+    public function credentials(EmailAccount $emailAccount): JsonResponse
+    {
+        try {
+            // Check if user has permission to view this account
+            // You might want to add additional authorization logic here
+
+            return response()->json([
+                'success' => true,
+                'email_address' => $emailAccount->email_address,
+                'password' => $emailAccount->password, // This will be automatically decrypted by the model
+                'provider' => $emailAccount->provider,
+                'status' => $emailAccount->status,
+                'created_at' => $emailAccount->created_at->format('M d, Y'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving credentials: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -40,16 +40,15 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/mexc/{mexcAccount}', [AccountController::class, 'mexcUpdate'])->name('mexc.update');
         Route::delete('/mexc/{mexcAccount}', [AccountController::class, 'mexcDestroy'])->name('mexc.destroy');
 
-        // Email Accounts (Resource route)
-        Route::resource('email', EmailAccountController::class)->names([
-            'index' => 'email',
-            'create' => 'email.create',
-            'store' => 'email.store',
-            'edit' => 'email.edit',
-            'update' => 'email.update',
-            'destroy' => 'email.destroy',
-        ]);
+        // Email Accounts with explicit route names to match parameter names in controller
+        Route::get('/email', [EmailAccountController::class, 'index'])->name('email');
+        Route::get('/email/create', [EmailAccountController::class, 'create'])->name('email.create');
+        Route::post('/email', [EmailAccountController::class, 'store'])->name('email.store');
+        Route::get('/email/{email}/edit', [EmailAccountController::class, 'edit'])->name('email.edit');
+        Route::put('/email/{email}', [EmailAccountController::class, 'update'])->name('email.update');
+        Route::delete('/email/{email}', [EmailAccountController::class, 'destroy'])->name('email.destroy');
 
+        Route::get('/email/{emailAccount}/credentials', [EmailAccountController::class, 'credentials'])->name('email.credentials');
 
 
         // Proxies

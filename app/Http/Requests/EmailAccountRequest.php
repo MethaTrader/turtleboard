@@ -24,10 +24,6 @@ class EmailAccountRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Different rules based on the step in the wizard
-        $step = $this->input('step', 'provider');
-
-        // Basic rules that apply to all steps for submitted fields
         $rules = [
             'provider' => ['required', Rule::in(['Gmail', 'Outlook', 'Yahoo', 'Rambler'])],
             'email_address' => [
@@ -40,23 +36,11 @@ class EmailAccountRequest extends FormRequest
             'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
         ];
 
-        // Return only the rules needed for the current step or all rules for final submission
-        if ($step === 'provider') {
-            return ['provider' => $rules['provider']];
-        } elseif ($step === 'email') {
-            return [
-                'provider' => $rules['provider'],
-                'email_address' => $rules['email_address'],
-            ];
-        } elseif ($step === 'password') {
-            return [
-                'provider' => $rules['provider'],
-                'email_address' => $rules['email_address'],
-                'password' => $rules['password'],
-            ];
+        // For update requests, make password optional if not provided
+        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
+            $rules['password'] = ['nullable', 'string', 'min:6'];
         }
 
-        // For edit form or final submission
         return $rules;
     }
 
@@ -89,6 +73,11 @@ class EmailAccountRequest extends FormRequest
         // Set default status if not provided
         if (!$this->has('status')) {
             $this->merge(['status' => 'active']);
+        }
+
+        // Handle empty proxy_id
+        if ($this->proxy_id === '') {
+            $this->merge(['proxy_id' => null]);
         }
     }
 }

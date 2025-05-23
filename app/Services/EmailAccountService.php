@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\EmailAccount;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class EmailAccountService
 {
@@ -15,12 +16,24 @@ class EmailAccountService
      */
     public function create(array $data): EmailAccount
     {
+        // Ensure user_id is set
         $data['user_id'] = Auth::id();
+
+        // Handle empty proxy_id
+        if (empty($data['proxy_id'])) {
+            $data['proxy_id'] = null;
+        }
+
+        // Ensure status is set
+        if (!isset($data['status'])) {
+            $data['status'] = 'active';
+        }
+
+        // Log the data being inserted for debugging
+        Log::info('Creating email account with data:', $data);
 
         // Create the email account
         $emailAccount = EmailAccount::create($data);
-
-        // Additional logic if needed (e.g., logging, related records)
 
         return $emailAccount;
     }
@@ -39,9 +52,12 @@ class EmailAccountService
             unset($data['password']);
         }
 
-        $emailAccount->update($data);
+        // Handle empty proxy_id
+        if (isset($data['proxy_id']) && empty($data['proxy_id'])) {
+            $data['proxy_id'] = null;
+        }
 
-        // Additional logic if needed
+        $emailAccount->update($data);
 
         return $emailAccount;
     }

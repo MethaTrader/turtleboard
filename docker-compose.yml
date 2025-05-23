@@ -47,6 +47,25 @@ services:
     networks:
       - turtleboard_network
 
+  # phpMyAdmin Service
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: turtleboard_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: root_password
+      UPLOAD_LIMIT: 50M
+    ports:
+      - "8082:80"
+    networks:
+      - turtleboard_network
+    depends_on:
+      - db
+
 # Networks
 networks:
   turtleboard_network:

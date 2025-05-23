@@ -1,3 +1,100 @@
 @tailwind base;
 @tailwind components;
+
+@layer components {
+    /* Card Styles */
+    .account-card {
+        @apply bg-card rounded-card p-6 shadow-card transition-all duration-300 relative overflow-hidden;
+    }
+
+    .account-card:hover {
+        @apply transform -translate-y-1 shadow-card-hover;
+    }
+
+    .card-icon {
+        @apply transition-transform duration-300;
+    }
+
+    .account-card:hover .card-icon {
+        @apply transform scale-110;
+    }
+
+    /* Sidebar Styling */
+    .sidebar-item {
+        @apply flex items-center px-4 py-3 text-text-primary rounded-md transition-colors relative;
+    }
+
+    .sidebar-item:hover {
+        @apply bg-background text-primary;
+    }
+
+    .sidebar-item.active {
+        @apply bg-background text-secondary font-medium;
+    }
+
+    .sidebar-item.active::before {
+        content: '';
+        @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r;
+    }
+
+    /* Balance Card */
+    .balance-card {
+        @apply rounded-card text-white relative overflow-hidden;
+        background: linear-gradient(135deg, theme('colors.secondary') 0%, #7A76E6 100%);
+        box-shadow: 0 10px 25px rgba(90, 85, 210, 0.3);
+    }
+
+    .credit-card {
+        @apply rounded-card p-4 mt-4;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+    }
+
+    /* Status Tags */
+    .status-tag {
+        @apply px-3 py-1 rounded-tag text-xs font-medium;
+    }
+
+    .status-completed {
+        @apply bg-success/10 text-success;
+    }
+
+    .status-pending {
+        @apply bg-secondary/10 text-secondary;
+    }
+
+    /* Turtle Icon */
+    .turtle-icon {
+        @apply w-10 h-10 rounded-full flex items-center justify-center bg-primary relative;
+    }
+
+    /* Chart Tabs */
+    .chart-tab {
+        @apply px-4 py-1 rounded-tag text-sm transition-all duration-200;
+    }
+
+    .chart-tab.active {
+        @apply bg-primary text-white;
+    }
+
+    .chart-tab:not(.active) {
+        @apply border border-gray-200 text-text-secondary hover:bg-primary/10;
+    }
+
+    /* User Dropdown */
+    .user-dropdown {
+        @apply hidden absolute right-0 top-full mt-2 bg-white rounded-md shadow-dropdown py-1 w-48 z-50;
+    }
+
+    .user-dropdown.show {
+        @apply block;
+    }
+}
+
 @tailwind utilities;
+
+@layer utilities {
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+}

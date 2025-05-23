@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,13 +40,17 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/mexc/{mexcAccount}', [AccountController::class, 'mexcUpdate'])->name('mexc.update');
         Route::delete('/mexc/{mexcAccount}', [AccountController::class, 'mexcDestroy'])->name('mexc.destroy');
 
-        // Email Accounts
-        Route::get('/email', [AccountController::class, 'emailIndex'])->name('email');
-        Route::get('/email/create', [AccountController::class, 'emailCreate'])->name('email.create');
-        Route::post('/email', [AccountController::class, 'emailStore'])->name('email.store');
-        Route::get('/email/{emailAccount}/edit', [AccountController::class, 'emailEdit'])->name('email.edit');
-        Route::put('/email/{emailAccount}', [AccountController::class, 'emailUpdate'])->name('email.update');
-        Route::delete('/email/{emailAccount}', [AccountController::class, 'emailDestroy'])->name('email.destroy');
+        // Email Accounts (Resource route)
+        Route::resource('email', EmailAccountController::class)->names([
+            'index' => 'email',
+            'create' => 'email.create',
+            'store' => 'email.store',
+            'edit' => 'email.edit',
+            'update' => 'email.update',
+            'destroy' => 'email.destroy',
+        ]);
+
+
 
         // Proxies
         Route::get('/proxy', [AccountController::class, 'proxyIndex'])->name('proxy');

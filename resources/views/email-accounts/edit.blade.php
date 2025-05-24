@@ -44,13 +44,36 @@
                         </div>
 
                         <div>
+                            <label for="first_name" class="block text-sm font-medium text-text-secondary mb-1">First Name (Optional)</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $emailAccount->first_name) }}"
+                                   class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
+                            @error('first_name')
+                            <div class="text-danger text-sm mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-text-secondary mb-1">Last Name (Optional)</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $emailAccount->last_name) }}"
+                                   class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
+                            @error('last_name')
+                            <div class="text-danger text-sm mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
                             <label for="password" class="block text-sm font-medium text-text-secondary mb-1">Password (leave blank to keep current)</label>
                             <div class="relative">
                                 <input type="password" id="password" name="password"
                                        class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
                                        placeholder="Enter new password">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onclick="togglePasswordVisibility()">
-                                    <i class="fas fa-eye" id="togglePassword"></i>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
+                                    <button type="button" onclick="generatePassword()" class="text-gray-400 hover:text-secondary" title="Generate password">
+                                        <i class="fas fa-dice"></i>
+                                    </button>
+                                    <div class="cursor-pointer text-gray-400 hover:text-secondary" onclick="togglePasswordVisibility()" title="Toggle password visibility">
+                                        <i class="fas fa-eye" id="togglePassword"></i>
+                                    </div>
                                 </div>
                             </div>
                             @error('password')
@@ -115,6 +138,61 @@
                 toggleIcon.classList.remove('fa-eye-slash');
                 toggleIcon.classList.add('fa-eye');
             }
+        }
+
+        function generatePassword() {
+            // Get first and last name values
+            let firstName = document.getElementById('first_name').value;
+            let lastName = document.getElementById('last_name').value;
+
+            // If no name is provided, use a random name
+            if (!firstName && !lastName) {
+                const randomNames = ['John', 'Jane', 'Mike', 'Anna', 'Alex', 'Emma', 'Sam', 'Lisa'];
+                firstName = randomNames[Math.floor(Math.random() * randomNames.length)];
+
+                const randomLastNames = ['Smith', 'Johnson', 'Brown', 'Davis', 'Wilson', 'Clark', 'Hall'];
+                lastName = randomLastNames[Math.floor(Math.random() * randomLastNames.length)];
+            }
+
+            // Capitalize first letter of first name
+            firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+            // Generate random numbers (2-3 digits)
+            const numbers = Math.floor(Math.random() * 90 + 10);
+
+            // Select a random special character
+            const specialChars = ['!', '@', '#', '$', '%', '&', '*'];
+            const specialChar = specialChars[Math.floor(Math.random() * specialChars.length)];
+
+            // Use a part of the last name (first 4 characters or the full name if shorter)
+            const lastNamePart = lastName.slice(0, Math.min(4, lastName.length));
+
+            // Randomly decide password format (to make it different each time)
+            const format = Math.floor(Math.random() * 4);
+
+            let password;
+            switch (format) {
+                case 0:
+                    password = firstName + specialChar + lastNamePart + numbers;
+                    break;
+                case 1:
+                    password = firstName + numbers + specialChar + lastNamePart;
+                    break;
+                case 2:
+                    password = lastNamePart + specialChar + firstName + numbers;
+                    break;
+                case 3:
+                    password = lastName.charAt(0).toUpperCase() + firstName + specialChar + numbers;
+                    break;
+            }
+
+            // Set password field value
+            document.getElementById('password').value = password;
+
+            // Show the password
+            document.getElementById('password').type = 'text';
+            document.getElementById('togglePassword').classList.remove('fa-eye');
+            document.getElementById('togglePassword').classList.add('fa-eye-slash');
         }
     </script>
 @endpush

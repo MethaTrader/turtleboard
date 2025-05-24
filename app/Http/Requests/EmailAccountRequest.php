@@ -34,6 +34,8 @@ class EmailAccountRequest extends FormRequest
             'password' => ['required', 'string', 'min:6'],
             'proxy_id' => ['nullable', 'exists:proxies,id'],
             'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
         ];
 
         // For update requests, make password optional if not provided
@@ -62,6 +64,8 @@ class EmailAccountRequest extends FormRequest
             'proxy_id.exists' => 'The selected proxy does not exist.',
             'status.required' => 'Please select a status.',
             'status.in' => 'Please select a valid status.',
+            'first_name.max' => 'First name cannot exceed 255 characters.',
+            'last_name.max' => 'Last name cannot exceed 255 characters.',
         ];
     }
 

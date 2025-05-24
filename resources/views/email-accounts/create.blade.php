@@ -67,6 +67,8 @@
                     <input type="hidden" name="password" :value="formData.password">
                     <input type="hidden" name="proxy_id" :value="formData.proxy_id || ''">
                     <input type="hidden" name="status" :value="formData.status">
+                    <input type="hidden" name="first_name" :value="formData.first_name">
+                    <input type="hidden" name="last_name" :value="formData.last_name">
 
                     <!-- Step 1: Select Provider -->
                     <div x-show="currentStep === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform -translate-x-4">
@@ -134,6 +136,39 @@
                                        :placeholder="'example@' + (formData.provider ? formData.provider.toLowerCase() : 'provider') + '.com'">
                             </div>
                             <div class="text-red-500 text-sm mt-2" x-show="errors.email_address" x-text="errors.email_address"></div>
+
+                            <!-- Email Suggestions Section -->
+                            <div class="mt-3" x-show="emailSuggestions.length > 0">
+                                <label class="block text-sm font-medium text-text-secondary mb-1">Suggestions</label>
+                                <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                                    <p class="text-xs text-text-secondary mb-2">Click on an option to select it:</p>
+                                    <div class="space-y-2">
+                                        <template x-for="(suggestion, index) in emailSuggestions" :key="index">
+                                            <div @click="selectEmailSuggestion(suggestion)"
+                                                 class="p-2 rounded-md border border-gray-200 hover:bg-secondary/5 hover:border-secondary cursor-pointer transition-all">
+                                                <div class="text-sm font-medium text-text-primary" x-text="suggestion.email"></div>
+                                                <div class="text-xs text-text-secondary" x-text="suggestion.meta.first_name + ' ' + suggestion.meta.last_name"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div class="mt-3" x-show="loadingEmailSuggestions">
+                                <div class="flex items-center text-text-secondary text-sm">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                    <span>Loading suggestions...</span>
+                                </div>
+                            </div>
+
+                            <!-- Generate Button -->
+                            <div class="mt-3">
+                                <button type="button" @click="generateEmailSuggestions" class="text-secondary text-sm hover:underline flex items-center">
+                                    <i class="fas fa-sync-alt mr-1"></i>
+                                    <span>Generate email suggestions</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -149,10 +184,19 @@
                                     <i class="fas fa-lock text-gray-400"></i>
                                 </div>
                                 <input type="password" id="password" x-model="formData.password"
-                                       class="block w-full pl-10 pr-10 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
+                                       class="block w-full pl-10 pr-20 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
                                        placeholder="Enter your password">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" @click="togglePassword">
-                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'" title="Toggle password visibility"></i>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" @click="generatePassword"
+                                            class="text-gray-400 hover:text-secondary mr-2"
+                                            title="Generate password">
+                                        <i class="fas fa-dice"></i>
+                                    </button>
+                                    <button type="button" @click="togglePassword"
+                                            class="text-gray-400 hover:text-secondary"
+                                            title="Toggle password visibility">
+                                        <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div class="text-red-500 text-sm mt-2" x-show="errors.password" x-text="errors.password"></div>
@@ -223,11 +267,15 @@
                     email_address: '',
                     password: '',
                     proxy_id: '',
-                    status: 'active'
+                    status: 'active',
+                    first_name: '',
+                    last_name: ''
                 },
                 errors: {},
                 loading: false,
                 showPassword: false,
+                emailSuggestions: [],
+                loadingEmailSuggestions: false,
 
                 get progress() {
                     return ((this.currentStep - 1) / 2) * 100;
@@ -243,6 +291,9 @@
                             this.errors.provider = 'Please select an email provider.';
                             return;
                         }
+
+                        // Generate email suggestions when moving to step 2
+                        this.generateEmailSuggestions();
                     } else if (this.currentStep === 2) {
                         if (!this.formData.email_address) {
                             this.errors.email_address = 'Please enter an email address.';
@@ -278,6 +329,112 @@
                     const passwordInput = document.getElementById('password');
                     if (passwordInput) {
                         passwordInput.type = this.showPassword ? 'text' : 'password';
+                    }
+                },
+
+                async generateEmailSuggestions() {
+                    if (!this.formData.provider) {
+                        return;
+                    }
+
+                    this.loadingEmailSuggestions = true;
+                    this.emailSuggestions = [];
+
+                    try {
+                        // Convert provider value to lowercase for API call
+                        const providerParam = this.formData.provider.toLowerCase();
+                        const response = await fetch(`/api/generate-email?provider=${providerParam}`);
+
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch email suggestions');
+                        }
+
+                        // Generate 5 email suggestions
+                        const suggestions = [];
+                        for (let i = 0; i < 5; i++) {
+                            const res = await fetch(`/api/generate-email?provider=${providerParam}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                suggestions.push(data);
+                            }
+                        }
+
+                        this.emailSuggestions = suggestions;
+                    } catch (error) {
+                        console.error('Error generating email suggestions:', error);
+                    } finally {
+                        this.loadingEmailSuggestions = false;
+                    }
+                },
+
+                selectEmailSuggestion(suggestion) {
+                    this.formData.email_address = suggestion.email;
+                    this.formData.first_name = suggestion.meta.first_name;
+                    this.formData.last_name = suggestion.meta.last_name;
+
+                    // Auto-generate password when selecting an email
+                    this.generatePassword();
+                },
+
+                generatePassword() {
+                    // Rules for password generation:
+                    // 1. Use first and last name (if available)
+                    // 2. Add several numbers
+                    // 3. At least 1 special character
+                    // 4. At least 1 capital letter
+                    // 5. Password is always generated differently
+
+                    let firstName = this.formData.first_name || '';
+                    let lastName = this.formData.last_name || '';
+
+                    // If no name is provided, use a random name
+                    if (!firstName && !lastName) {
+                        const randomNames = ['John', 'Jane', 'Mike', 'Anna', 'Alex', 'Emma', 'Sam', 'Lisa'];
+                        firstName = randomNames[Math.floor(Math.random() * randomNames.length)];
+
+                        const randomLastNames = ['Smith', 'Johnson', 'Brown', 'Davis', 'Wilson', 'Clark', 'Hall'];
+                        lastName = randomLastNames[Math.floor(Math.random() * randomLastNames.length)];
+                    }
+
+                    // Capitalize first letter of first name
+                    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+                    // Generate random numbers (2-3 digits)
+                    const numbers = Math.floor(Math.random() * 90 + 10);
+
+                    // Select a random special character
+                    const specialChars = ['!', '@', '#', '$', '%', '&', '*'];
+                    const specialChar = specialChars[Math.floor(Math.random() * specialChars.length)];
+
+                    // Use a part of the last name (first 4 characters or the full name if shorter)
+                    const lastNamePart = lastName.slice(0, Math.min(4, lastName.length));
+
+                    // Randomly decide password format (to make it different each time)
+                    const format = Math.floor(Math.random() * 4);
+
+                    let password;
+                    switch (format) {
+                        case 0:
+                            password = firstName + specialChar + lastNamePart + numbers;
+                            break;
+                        case 1:
+                            password = firstName + numbers + specialChar + lastNamePart;
+                            break;
+                        case 2:
+                            password = lastNamePart + specialChar + firstName + numbers;
+                            break;
+                        case 3:
+                            password = lastName.charAt(0).toUpperCase() + firstName + specialChar + numbers;
+                            break;
+                    }
+
+                    this.formData.password = password;
+
+                    // Show the password
+                    this.showPassword = true;
+                    const passwordInput = document.getElementById('password');
+                    if (passwordInput) {
+                        passwordInput.type = 'text';
                     }
                 },
 

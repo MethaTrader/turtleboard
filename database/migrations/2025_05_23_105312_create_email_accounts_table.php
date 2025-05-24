@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->enum('provider', ['Gmail', 'Outlook', 'Yahoo', 'Rambler']);
             $table->string('email_address')->unique();
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
             $table->text('password');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('proxy_id')->nullable()->unique();

@@ -26,6 +26,8 @@ class EmailAccount extends Model
         'user_id',
         'proxy_id',
         'status',
+        'first_name',
+        'last_name',
     ];
 
     /**
@@ -119,5 +121,23 @@ class EmailAccount extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Get the full name or email if name is not available.
+     *
+     * @return string
+     */
+    public function getFullNameAttribute(): string
+    {
+        if ($this->first_name && $this->last_name) {
+            return $this->first_name . ' ' . $this->last_name;
+        } elseif ($this->first_name) {
+            return $this->first_name;
+        } elseif ($this->last_name) {
+            return $this->last_name;
+        }
+
+        return $this->email_address;
     }
 }

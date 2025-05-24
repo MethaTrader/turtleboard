@@ -29,6 +29,15 @@ class EmailAccountService
             $data['status'] = 'active';
         }
 
+        // Handle first_name and last_name fields
+        if (!isset($data['first_name'])) {
+            $data['first_name'] = null;
+        }
+
+        if (!isset($data['last_name'])) {
+            $data['last_name'] = null;
+        }
+
         // Log the data being inserted for debugging
         Log::info('Creating email account with data:', $data);
 
@@ -55,6 +64,15 @@ class EmailAccountService
         // Handle empty proxy_id
         if (isset($data['proxy_id']) && empty($data['proxy_id'])) {
             $data['proxy_id'] = null;
+        }
+
+        // Handle empty first_name and last_name
+        if (isset($data['first_name']) && empty($data['first_name'])) {
+            $data['first_name'] = null;
+        }
+
+        if (isset($data['last_name']) && empty($data['last_name'])) {
+            $data['last_name'] = null;
         }
 
         $emailAccount->update($data);

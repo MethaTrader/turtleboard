@@ -169,6 +169,8 @@ class EmailAccountController extends Controller
                 'provider' => $emailAccount->provider,
                 'status' => $emailAccount->status,
                 'created_at' => $emailAccount->created_at->format('M d, Y'),
+                'first_name' => $emailAccount->first_name,
+                'last_name' => $emailAccount->last_name,
             ]);
         } catch (\Exception $e) {
             return response()->json([

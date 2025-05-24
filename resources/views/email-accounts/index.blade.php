@@ -114,11 +114,26 @@
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-text-primary">{{ $account->email_address }}</div>
+                                            @if($account->first_name || $account->last_name)
+                                                <div class="text-xs text-text-secondary">{{ $account->full_name }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-text-primary">{{ $account->provider }}</div>
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center
+                                    @if($account->provider == 'Gmail') bg-red-100 text-red-500
+                                    @elseif($account->provider == 'Outlook') bg-blue-100 text-blue-500
+                                    @elseif($account->provider == 'Yahoo') bg-purple-100 text-purple-500
+                                    @else bg-amber-100 text-amber-500
+                                    @endif">
+                                        <i class="
+                                        @if($account->provider == 'Gmail') fab fa-google
+                                        @elseif($account->provider == 'Outlook') fab fa-microsoft
+                                        @elseif($account->provider == 'Yahoo') fab fa-yahoo
+                                        @else fas fa-envelope
+                                        @endif text-lg"></i>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -193,6 +208,14 @@
 
                 <!-- Modal Content -->
                 <div id="modalContent" class="hidden">
+                    <!-- Name Fields -->
+                    <div class="mb-4" id="nameFieldsContainer">
+                        <label class="block text-sm font-medium text-text-secondary mb-1">Name</label>
+                        <div id="nameFields" class="text-text-primary font-medium py-2">
+                            <!-- Will be filled dynamically -->
+                        </div>
+                    </div>
+
                     <!-- Email Field -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-text-secondary mb-1">Email Address</label>
@@ -273,6 +296,7 @@
             const loading = document.getElementById('modalLoading');
             const content = document.getElementById('modalContent');
             const error = document.getElementById('modalError');
+            const nameFieldsContainer = document.getElementById('nameFieldsContainer');
 
             // Show modal and loading state
             modal.classList.remove('hidden');
@@ -299,6 +323,15 @@
                 document.getElementById('modalEmail').value = data.email_address;
                 document.getElementById('modalPassword').value = data.password;
                 document.getElementById('modalProvider').textContent = data.provider;
+
+                // Handle name fields
+                const nameFields = document.getElementById('nameFields');
+                if (data.first_name || data.last_name) {
+                    nameFields.textContent = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+                    nameFieldsContainer.classList.remove('hidden');
+                } else {
+                    nameFieldsContainer.classList.add('hidden');
+                }
 
                 // Set provider icon
                 const providerIcon = document.getElementById('providerIcon');

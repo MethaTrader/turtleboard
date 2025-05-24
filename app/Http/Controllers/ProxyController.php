@@ -45,9 +45,19 @@ class ProxyController extends Controller
 
         $proxies = $query->with('emailAccount')->paginate(15);
 
+        // Calculate status counts
+        $totalProxies = Proxy::count();
+        $validCount = Proxy::where('validation_status', 'valid')->count();
+        $invalidCount = Proxy::where('validation_status', 'invalid')->count();
+        $pendingCount = Proxy::where('validation_status', 'pending')->count();
+
         return view('proxies.index', [
             'proxies' => $proxies,
             'filters' => $request->only(['status', 'search']),
+            'totalProxies' => $totalProxies,
+            'validCount' => $validCount,
+            'invalidCount' => $invalidCount,
+            'pendingCount' => $pendingCount,
         ]);
     }
 

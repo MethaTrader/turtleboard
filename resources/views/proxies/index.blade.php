@@ -53,7 +53,7 @@
                 </div>
                 <div>
                     <p class="text-text-secondary text-sm">Total Proxies</p>
-                    <p class="text-2xl font-bold text-text-primary">{{ $totalProxies ?? $proxies->total() }}</p>
+                    <p class="text-2xl font-bold text-text-primary">{{ $totalProxies }}</p>
                 </div>
             </div>
 
@@ -63,7 +63,7 @@
                 </div>
                 <div>
                     <p class="text-text-secondary text-sm">Valid Proxies</p>
-                    <p class="text-2xl font-bold text-success">{{ $validCount ?? 0 }}</p>
+                    <p class="text-2xl font-bold text-success">{{ $validCount }}</p>
                 </div>
             </div>
 
@@ -73,7 +73,7 @@
                 </div>
                 <div>
                     <p class="text-text-secondary text-sm">Pending Proxies</p>
-                    <p class="text-2xl font-bold text-warning">{{ $pendingCount ?? 0 }}</p>
+                    <p class="text-2xl font-bold text-warning">{{ $pendingCount }}</p>
                 </div>
             </div>
 
@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <p class="text-text-secondary text-sm">Invalid Proxies</p>
-                    <p class="text-2xl font-bold text-danger">{{ $invalidCount ?? 0 }}</p>
+                    <p class="text-2xl font-bold text-danger">{{ $invalidCount }}</p>
                 </div>
             </div>
         </div>
@@ -148,10 +148,10 @@
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <input type="checkbox" name="ids[]" value="{{ $proxy->id }}" class="proxy-checkbox rounded border-gray-300 text-secondary focus:ring-secondary/20">
-                                            <span class="ml-2">{{ $proxy->ip_address }}</span>
+                                            <span class="ml-2 font-mono">{{ $proxy->ip_address }}</span>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-4 whitespace-nowrap">{{ $proxy->port }}</td>
+                                    <td class="px-4 py-4 whitespace-nowrap font-mono">{{ $proxy->port }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         @if($proxy->username)
                                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -187,7 +187,15 @@
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         @if($proxy->geolocation)
-                                            <span class="text-text-primary">{{ $proxy->geolocation }}</span>
+                                            <div class="flex items-center">
+                                                @if($proxy->country_code)
+                                                    <img src="{{ $proxy->getFlagUrl() }}"
+                                                         alt="{{ $proxy->country_code }}"
+                                                         class="w-4 h-4 mr-2 rounded-sm"
+                                                         onerror="this.style.display='none'">
+                                                @endif
+                                                <span class="text-text-primary">{{ $proxy->geolocation }}</span>
+                                            </div>
                                         @else
                                             <span class="text-text-secondary">Unknown</span>
                                         @endif
@@ -202,20 +210,25 @@
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         @if($proxy->emailAccount)
                                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                <i class="fas fa-envelope mr-1"></i> {{ $proxy->emailAccount->email_address }}
+                                                <i class="fas fa-envelope mr-1"></i> {{ Str::limit($proxy->emailAccount->email_address, 20) }}
                                             </span>
                                         @else
                                             <span class="text-text-secondary">Not in use</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="copyProxyToClipboard('{{ $proxy->getFullProxyString() }}')"
+                                                class="text-primary hover:text-primary/80 mr-3"
+                                                title="Copy proxy">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                         <form action="{{ route('accounts.proxy.validate', $proxy) }}" method="POST" class="inline-block">
                                             @csrf
                                             <button type="submit" class="text-secondary hover:text-secondary/80 mr-3" title="Validate">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
                                         </form>
-                                        <a href="{{ route('accounts.proxy.edit', $proxy) }}" class="text-primary hover:text-primary/80 mr-3" title="Edit">
+                                        <a href="{{ route('accounts.proxy.edit', $proxy) }}" class="text-secondary hover:text-secondary/80 mr-3" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <form action="{{ route('accounts.proxy.destroy', $proxy) }}" method="POST" class="inline-block">
@@ -251,6 +264,12 @@
                 <p class="text-xs text-text-secondary">Do not close this window.</p>
             </div>
         </div>
+    </div>
+
+    <!-- Toast Notification for Copy Actions -->
+    <div id="copyToast" class="fixed top-4 right-0 bg-success text-white px-4 py-2 rounded-md shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+        <i class="fas fa-check mr-2"></i>
+        <span id="copyToastMessage">Proxy copied to clipboard!</span>
     </div>
 @endsection
 
@@ -295,5 +314,53 @@
                 });
             }
         });
+
+        // Copy proxy to clipboard function
+        async function copyProxyToClipboard(proxyString) {
+            const toast = document.getElementById('copyToast');
+            const toastMessage = document.getElementById('copyToastMessage');
+
+            try {
+                await navigator.clipboard.writeText(proxyString);
+
+                // Show toast
+                toastMessage.textContent = 'Proxy copied to clipboard!';
+                toast.classList.remove('translate-x-full');
+
+                // Hide toast after 3 seconds
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                }, 3000);
+
+            } catch (err) {
+                console.error('Failed to copy:', err);
+
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = proxyString;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    toastMessage.textContent = 'Proxy copied to clipboard!';
+                    toast.classList.remove('translate-x-full');
+
+                    setTimeout(() => {
+                        toast.classList.add('translate-x-full');
+                    }, 3000);
+                } catch (fallbackErr) {
+                    toastMessage.textContent = 'Failed to copy to clipboard';
+                    toast.classList.remove('translate-x-full');
+
+                    setTimeout(() => {
+                        toast.classList.add('translate-x-full');
+                    }, 3000);
+                }
+
+                document.body.removeChild(textArea);
+            }
+        }
     </script>
 @endpush

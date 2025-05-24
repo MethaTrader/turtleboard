@@ -85,11 +85,11 @@ class ProxyService
             $responseTime = (int) (($endTime - $startTime) * 1000); // Convert to milliseconds
 
             if ($response->successful()) {
-                // Get geolocation data
+                // Get geolocation data with country code
                 $geoData = $this->getGeolocation($proxy->ip_address);
 
                 // Mark proxy as valid
-                $proxy->markAsValid($responseTime, $geoData);
+                $proxy->markAsValid($responseTime, $geoData['location'], $geoData['country_code']);
                 return true;
             } else {
                 $proxy->markAsInvalid();
@@ -110,9 +110,9 @@ class ProxyService
      * Get geolocation information for an IP address.
      *
      * @param string $ipAddress
-     * @return string|null
+     * @return array
      */
-    protected function getGeolocation(string $ipAddress): ?string
+    protected function getGeolocation(string $ipAddress): array
     {
         try {
             // Use ip-api.com's free service for geolocation
@@ -122,18 +122,27 @@ class ProxyService
             if ($response->successful()) {
                 $data = $response->json();
                 if ($data['status'] === 'success') {
-                    return $data['country'] . ', ' . $data['city'];
+                    return [
+                        'location' => $data['country'] . ', ' . $data['city'],
+                        'country_code' => strtolower($data['countryCode']) // Convert to lowercase for flag API
+                    ];
                 }
             }
 
-            return null;
+            return [
+                'location' => null,
+                'country_code' => null
+            ];
         } catch (\Exception $e) {
             Log::error('Geolocation error: ' . $e->getMessage(), [
                 'ip_address' => $ipAddress,
                 'exception' => $e
             ]);
 
-            return null;
+            return [
+                'location' => null,
+                'country_code' => null
+            ];
         }
     }
 

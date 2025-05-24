@@ -28,6 +28,7 @@ class Proxy extends Model
         'validation_status',
         'response_time',
         'geolocation',
+        'country_code',
         'user_id',
     ];
 
@@ -111,15 +112,17 @@ class Proxy extends Model
      *
      * @param  int  $responseTime
      * @param  string|null  $geolocation
+     * @param  string|null  $countryCode
      * @return bool
      */
-    public function markAsValid(int $responseTime, ?string $geolocation = null): bool
+    public function markAsValid(int $responseTime, ?string $geolocation = null, ?string $countryCode = null): bool
     {
         return $this->update([
             'validation_status' => 'valid',
             'last_validation_date' => now(),
             'response_time' => $responseTime,
             'geolocation' => $geolocation,
+            'country_code' => $countryCode,
         ]);
     }
 
@@ -134,6 +137,20 @@ class Proxy extends Model
             'validation_status' => 'invalid',
             'last_validation_date' => now(),
         ]);
+    }
+
+    /**
+     * Get the flag URL for the proxy's country.
+     *
+     * @return string|null
+     */
+    public function getFlagUrl(): ?string
+    {
+        if (!$this->country_code) {
+            return null;
+        }
+
+        return "https://flagpedia.net/data/flags/emoji/twitter/64/{$this->country_code}.png";
     }
 
     /**

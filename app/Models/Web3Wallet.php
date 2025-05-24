@@ -22,6 +22,7 @@ class Web3Wallet extends Model
     protected $fillable = [
         'address',
         'seed_phrase',
+        'network',
         'user_id',
     ];
 
@@ -32,6 +33,15 @@ class Web3Wallet extends Model
      */
     protected $hidden = [
         'seed_phrase',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'network' => 'string',
     ];
 
     /**
@@ -94,6 +104,18 @@ class Web3Wallet extends Model
     }
 
     /**
+     * Scope a query to filter by network.
+     *
+     * @param  Builder  $query
+     * @param  string  $network
+     * @return Builder
+     */
+    public function scopeNetwork($query, $network)
+    {
+        return $query->where('network', $network);
+    }
+
+    /**
      * Check if the wallet is connected to a MEXC account.
      *
      * @return bool
@@ -101,5 +123,22 @@ class Web3Wallet extends Model
     public function isConnectedToMexc(): bool
     {
         return $this->mexcAccount()->exists();
+    }
+
+    /**
+     * Get the blockchain explorer URL for this wallet address.
+     *
+     * @return string|null
+     */
+    public function getExplorerUrl(): ?string
+    {
+        switch ($this->network) {
+            case 'ethereum':
+                return 'https://etherscan.io/address/' . $this->address;
+            case 'binance':
+                return 'https://bscscan.com/address/' . $this->address;
+            default:
+                return null;
+        }
     }
 }

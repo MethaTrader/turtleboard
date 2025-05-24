@@ -8,6 +8,7 @@ use App\Http\Controllers\EmailGeneratorController;
 use App\Http\Controllers\MexcAccountController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProxyController;
+use App\Http\Controllers\Web3WalletController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -70,13 +71,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/proxy/{proxy}/validate', [ProxyController::class, 'validate'])->name('proxy.validate');
         Route::post('/proxy/validate-all', [ProxyController::class, 'runValidation'])->name('proxy.validate-all');
 
-        // Web3 Wallets
-        Route::get('/web3', [AccountController::class, 'web3Index'])->name('web3');
-        Route::get('/web3/create', [AccountController::class, 'web3Create'])->name('web3.create');
-        Route::post('/web3', [AccountController::class, 'web3Store'])->name('web3.store');
-        Route::get('/web3/{web3Wallet}/edit', [AccountController::class, 'web3Edit'])->name('web3.edit');
-        Route::put('/web3/{web3Wallet}', [AccountController::class, 'web3Update'])->name('web3.update');
-        Route::delete('/web3/{web3Wallet}', [AccountController::class, 'web3Destroy'])->name('web3.destroy');
+// Web3 Wallets
+        Route::get('/web3', [Web3WalletController::class, 'index'])->name('web3');
+        Route::get('/web3/create', [Web3WalletController::class, 'create'])->name('web3.create');
+        Route::post('/web3', [Web3WalletController::class, 'store'])->name('web3.store');
+        Route::get('/web3/{web3Wallet}/edit', [Web3WalletController::class, 'edit'])->name('web3.edit');
+        Route::put('/web3/{web3Wallet}', [Web3WalletController::class, 'update'])->name('web3.update');
+        Route::delete('/web3/{web3Wallet}', [Web3WalletController::class, 'destroy'])->name('web3.destroy');
+        Route::get('/web3/{web3Wallet}/details', [Web3WalletController::class, 'details'])->name('web3.details');
     });
 
     // Relationships and Validation

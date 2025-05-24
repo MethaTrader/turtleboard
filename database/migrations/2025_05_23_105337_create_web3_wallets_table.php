@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('address')->unique();
             $table->text('seed_phrase');
+            $table->string('network')->default('ethereum');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

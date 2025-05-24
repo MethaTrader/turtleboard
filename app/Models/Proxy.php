@@ -150,7 +150,7 @@ class Proxy extends Model
             return null;
         }
 
-        return "https://flagpedia.net/data/flags/emoji/twitter/64/{$this->country_code}.png";
+        return "https://flagcdn.com/32x24/{$this->country_code}.png";
     }
 
     /**

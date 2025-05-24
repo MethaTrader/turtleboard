@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\EmailGeneratorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProxyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,13 +56,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/email/{emailAccount}/credentials', [EmailAccountController::class, 'credentials'])->name('email.credentials');
 
 
-        // Proxies
-        Route::get('/proxy', [AccountController::class, 'proxyIndex'])->name('proxy');
-        Route::get('/proxy/create', [AccountController::class, 'proxyCreate'])->name('proxy.create');
-        Route::post('/proxy', [AccountController::class, 'proxyStore'])->name('proxy.store');
-        Route::get('/proxy/{proxy}/edit', [AccountController::class, 'proxyEdit'])->name('proxy.edit');
-        Route::put('/proxy/{proxy}', [AccountController::class, 'proxyUpdate'])->name('proxy.update');
-        Route::delete('/proxy/{proxy}', [AccountController::class, 'proxyDestroy'])->name('proxy.destroy');
+        // Proxy routes
+        Route::get('/proxy', [ProxyController::class, 'index'])->name('proxy');
+        Route::get('/proxy/create', [ProxyController::class, 'create'])->name('proxy.create');
+        Route::post('/proxy', [ProxyController::class, 'store'])->name('proxy.store');
+        Route::get('/proxy/{proxy}/edit', [ProxyController::class, 'edit'])->name('proxy.edit');
+        Route::put('/proxy/{proxy}', [ProxyController::class, 'update'])->name('proxy.update');
+        Route::delete('/proxy/{proxy}', [ProxyController::class, 'destroy'])->name('proxy.destroy');
+
+        // Proxy validation routes
+        Route::post('/proxy/{proxy}/validate', [ProxyController::class, 'validate'])->name('proxy.validate');
+        Route::post('/proxy/validate-all', [ProxyController::class, 'runValidation'])->name('proxy.validate-all');
 
         // Web3 Wallets
         Route::get('/web3', [AccountController::class, 'web3Index'])->name('web3');

@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\EmailGeneratorController;
+use App\Http\Controllers\MexcAccountController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProxyController;
 use Illuminate\Support\Facades\Route;
@@ -37,13 +38,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Account Management Routes - available to both admins and account managers
     Route::middleware(['account.manager'])->prefix('accounts')->name('accounts.')->group(function () {
-        // MEXC Accounts
-        Route::get('/mexc', [AccountController::class, 'mexcIndex'])->name('mexc');
-        Route::get('/mexc/create', [AccountController::class, 'mexcCreate'])->name('mexc.create');
-        Route::post('/mexc', [AccountController::class, 'mexcStore'])->name('mexc.store');
-        Route::get('/mexc/{mexcAccount}/edit', [AccountController::class, 'mexcEdit'])->name('mexc.edit');
-        Route::put('/mexc/{mexcAccount}', [AccountController::class, 'mexcUpdate'])->name('mexc.update');
-        Route::delete('/mexc/{mexcAccount}', [AccountController::class, 'mexcDestroy'])->name('mexc.destroy');
+// MEXC Accounts
+        Route::get('/mexc', [MexcAccountController::class, 'index'])->name('mexc');
+        Route::get('/mexc/create', [MexcAccountController::class, 'create'])->name('mexc.create');
+        Route::post('/mexc', [MexcAccountController::class, 'store'])->name('mexc.store');
+        Route::get('/mexc/{mexcAccount}/edit', [MexcAccountController::class, 'edit'])->name('mexc.edit');
+        Route::put('/mexc/{mexcAccount}', [MexcAccountController::class, 'update'])->name('mexc.update');
+        Route::delete('/mexc/{mexcAccount}', [MexcAccountController::class, 'destroy'])->name('mexc.destroy');
+        Route::get('/mexc/{mexcAccount}/credentials', [MexcAccountController::class, 'credentials'])->name('mexc.credentials');
 
         // Email Accounts with explicit route names to match parameter names in controller
         Route::get('/email', [EmailAccountController::class, 'index'])->name('email');

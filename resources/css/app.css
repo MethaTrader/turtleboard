@@ -1,5 +1,9 @@
+@import 'shepherd.js/dist/css/shepherd.css';
+@import './shepherd-custom.css';
+
 @tailwind base;
 @tailwind components;
+
 
 @layer components {
     /* Card Styles */

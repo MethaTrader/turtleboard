@@ -1,0 +1,153 @@
+/* resources/css/shepherd-custom.css */
+
+/* Custom theme for shepherd that matches the app design */
+.shepherd-theme-custom {
+    --shepherd-bg: white;
+    --shepherd-text: #2D3748;
+    --shepherd-secondary-text: #718096;
+    --shepherd-header-bg: #EFF3FD;
+    --shepherd-primary-btn: #5A55D2;
+    --shepherd-primary-btn-hover: #4a46b6;
+    --shepherd-secondary-btn: #f7fafc;
+    --shepherd-secondary-btn-hover: #edf2f7;
+    --shepherd-button-border-radius: 0.375rem;
+    --shepherd-element-border-radius: 0.5rem;
+    --shepherd-element-width: 350px;
+}
+
+.shepherd-theme-custom .shepherd-content {
+    border-radius: var(--shepherd-element-border-radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    max-width: var(--shepherd-element-width);
+}
+
+.shepherd-theme-custom .shepherd-text {
+    color: var(--shepherd-text);
+    padding: 1.5rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.shepherd-theme-custom .shepherd-header {
+    background: var(--shepherd-header-bg);
+    padding: 0.75rem 1rem;
+    border-top-left-radius: var(--shepherd-element-border-radius);
+    border-top-right-radius: var(--shepherd-element-border-radius);
+}
+
+.shepherd-theme-custom .shepherd-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--shepherd-text);
+}
+
+.shepherd-theme-custom .shepherd-header .shepherd-cancel-icon {
+    color: var(--shepherd-secondary-text);
+    opacity: 0.75;
+    transition: opacity 0.2s;
+}
+
+.shepherd-theme-custom .shepherd-header .shepherd-cancel-icon:hover {
+    opacity: 1;
+}
+
+.shepherd-theme-custom .shepherd-footer {
+    padding: 0.75rem 1.5rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.shepherd-theme-custom .shepherd-button {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--shepherd-button-border-radius);
+    margin-left: 0.5rem;
+    transition: all 0.2s;
+}
+
+.shepherd-theme-custom .shepherd-button-primary {
+    background-color: var(--shepherd-primary-btn);
+    color: white;
+}
+
+.shepherd-theme-custom .shepherd-button-primary:hover {
+    background-color: var(--shepherd-primary-btn-hover);
+}
+
+.shepherd-theme-custom .shepherd-button-secondary {
+    background-color: var(--shepherd-secondary-btn);
+    color: var(--shepherd-text);
+}
+
+.shepherd-theme-custom .shepherd-button-secondary:hover {
+    background-color: var(--shepherd-secondary-btn-hover);
+}
+
+.shepherd-theme-custom .shepherd-element[data-popper-placement^="top"] .shepherd-arrow {
+    bottom: -8px;
+}
+
+.shepherd-theme-custom .shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow {
+    top: -8px;
+}
+
+.shepherd-theme-custom .shepherd-element[data-popper-placement^="left"] .shepherd-arrow {
+    right: -8px;
+}
+
+.shepherd-theme-custom .shepherd-element[data-popper-placement^="right"] .shepherd-arrow {
+    left: -8px;
+}
+
+/* Add a nice animation for steps */
+.shepherd-theme-custom.shepherd-enabled {
+    opacity: 0;
+    animation: shepherd-fade-in 0.3s ease forwards;
+}
+
+@keyframes shepherd-fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Help icon/button styling */
+.tour-help-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #00DEA3;
+    color: white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 222, 163, 0.2);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.tour-help-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 222, 163, 0.3);
+}
+
+/* Highlight the current target element */
+.shepherd-highlighted {
+    box-shadow: 0 0 0 4px rgba(90, 85, 210, 0.2) !important;
+    transition: all 0.3s ease;
+    z-index: 1 !important;
+}
+
+/* Dark overlay with custom opacity */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+    opacity: 0.7;
+}

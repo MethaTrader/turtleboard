@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/DashboardController.php
 
 namespace App\Http\Controllers;
 
@@ -8,6 +9,7 @@ use App\Models\Proxy;
 use App\Models\Web3Wallet;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -16,7 +18,7 @@ class DashboardController extends Controller
      *
      * @return View
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         // Fetch counts for each entity
         $mexcAccountsCount = MexcAccount::count();
@@ -47,8 +49,7 @@ class DashboardController extends Controller
             'Rambler' => EmailAccount::where('provider', 'Rambler')->count(),
         ];
 
-        // Sample recent activities for the user (in a real app, this would come from a database)
-        // These would be the specific activities related to the MEXC management system
+        // Sample recent activities for the user
         $userActivities = [
             [
                 'type' => 'mexc',
@@ -73,6 +74,42 @@ class DashboardController extends Controller
             ],
         ];
 
+        // Check if user needs onboarding - session-based approach
+        $needsOnboarding = false;
+
+        // Check if this is first visit to dashboard
+        if (!$request->session()->has('has_seen_tutorial')) {
+            $needsOnboarding = true;
+
+            // If the just_registered flag is set, keep it that way
+            // Otherwise, mark that they've seen the tutorial now
+            if (!$request->session()->has('just_registered')) {
+                $request->session()->put('has_seen_tutorial', true);
+            }
+        }
+
+        // If they just registered, they should see the tutorial
+        if ($request->session()->has('just_registered')) {
+            $needsOnboarding = true;
+
+            // Clear the just_registered flag
+            $request->session()->forget('just_registered');
+            // Mark that they've seen the tutorial
+            $request->session()->put('has_seen_tutorial', true);
+        }
+
+        // Database approach (if the columns exist)
+        if (Schema::hasColumn('users', 'login_count') &&
+            Schema::hasColumn('users', 'has_completed_onboarding')) {
+
+            $user = $request->user();
+
+            // First login or hasn't completed onboarding
+            if ($user->login_count <= 1 || !$user->has_completed_onboarding) {
+                $needsOnboarding = true;
+            }
+        }
+
         return view('dashboard', [
             'stats' => [
                 'mexcAccounts' => $mexcAccountsCount,
@@ -87,6 +124,7 @@ class DashboardController extends Controller
             ],
             'emailProviderStats' => $emailProviderStats,
             'userActivities' => $userActivities,
+            'needsOnboarding' => $needsOnboarding, // Pass to the view
         ]);
     }
 }

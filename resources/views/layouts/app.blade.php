@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Styles & Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/onboarding.js'])
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -55,6 +55,11 @@
                         <i class="fas fa-search absolute left-4 top-3 text-text-secondary"></i>
                     </div>
 
+                    <!-- Tour Help Button -->
+                    <button id="start-tour-button" class="tour-help-button" title="Start Tour">
+                        <i class="fas fa-question"></i>
+                    </button>
+
                     <div class="relative">
                         <button class="relative">
                             <i class="fas fa-bell text-text-secondary text-xl hover:text-primary transition-colors duration-200"></i>
@@ -85,6 +90,10 @@
                             <a href="{{ route('admin.settings') }}" class="block px-4 py-2 text-sm text-text-primary hover:bg-background transition-colors duration-150">
                                 <i class="fas fa-cog mr-2"></i> Settings
                             </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <button id="start-tour-menu" class="block w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-background transition-colors duration-150">
+                                <i class="fas fa-question-circle mr-2"></i> Take Tour
+                            </button>
                             <div class="border-t border-gray-200 my-1"></div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -118,6 +127,20 @@
                 const sidebar = document.querySelector('[x-data*="sidebarOpen"]');
                 if (sidebar && window.Alpine) {
                     window.Alpine.evaluate(sidebar, 'sidebarOpen = !sidebarOpen');
+                }
+            });
+        }
+
+        // Add event listener for the tour button in menu
+        const tourMenuButton = document.getElementById('start-tour-menu');
+        if (tourMenuButton) {
+            tourMenuButton.addEventListener('click', function() {
+                // This will trigger the tour through the onboarding.js functionality
+                if (typeof window.initTour === 'function') {
+                    window.initTour();
+                } else {
+                    // Fallback if the function isn't directly accessible
+                    document.dispatchEvent(new CustomEvent('start-tour'));
                 }
             });
         }

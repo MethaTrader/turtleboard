@@ -93,3 +93,17 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     });
 });
+
+Route::middleware(['auth'])->group(function () {
+    // Existing routes...
+
+    // Onboarding API routes
+    Route::prefix('api/onboarding')->name('api.onboarding.')->group(function () {
+        Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
+
+        // Only available in non-production environments
+        if (!app()->environment('production')) {
+            Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
+        }
+    });
+});

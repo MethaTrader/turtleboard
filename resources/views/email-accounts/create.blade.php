@@ -137,7 +137,7 @@
                             </div>
                             <div class="text-red-500 text-sm mt-2" x-show="errors.email_address" x-text="errors.email_address"></div>
 
-                            <!-- Email Suggestions Section -->
+                            <!-- Email Suggestions Section (in Step 2) -->
                             <div class="mt-3" x-show="emailSuggestions.length > 0">
                                 <label class="block text-sm font-medium text-text-secondary mb-1">Suggestions</label>
                                 <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
@@ -145,9 +145,50 @@
                                     <div class="space-y-2">
                                         <template x-for="(suggestion, index) in emailSuggestions" :key="index">
                                             <div @click="selectEmailSuggestion(suggestion)"
-                                                 class="p-2 rounded-md border border-gray-200 hover:bg-secondary/5 hover:border-secondary cursor-pointer transition-all">
-                                                <div class="text-sm font-medium text-text-primary" x-text="suggestion.email"></div>
-                                                <div class="text-xs text-text-secondary" x-text="suggestion.meta.first_name + ' ' + suggestion.meta.last_name"></div>
+                                                 class="p-3 rounded-md border border-gray-200 hover:bg-secondary/5 hover:border-secondary cursor-pointer transition-all relative"
+                                                 :class="suggestion.meta.is_best_choice ? 'border-primary bg-primary/5' : ''">
+
+                                                <!-- Best Choice Badge -->
+                                                <div x-show="suggestion.meta.is_best_choice"
+                                                     class="absolute top-2 right-3 flex items-center">
+                        <span class="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                            <span>Best choice</span>
+                            <span class="ml-1">✨</span>
+                        </span>
+                                                </div>
+
+                                                <!-- Email and Name -->
+                                                <div class="text-sm font-medium text-text-primary mb-1" x-text="suggestion.email"></div>
+                                                <div class="text-xs text-text-secondary flex items-center justify-between">
+                                                    <span x-text="suggestion.meta.first_name + ' ' + suggestion.meta.last_name"></span>
+
+                                                    <!-- Score indicator for debugging (optional - can be removed) -->
+                                                    <span class="text-xs px-2 py-0.5 rounded-full"
+                                                          :class="{
+                                  'bg-green-100 text-green-800': suggestion.meta.score >= 75,
+                                  'bg-yellow-100 text-yellow-800': suggestion.meta.score >= 50 && suggestion.meta.score < 75,
+                                  'bg-red-100 text-red-800': suggestion.meta.score < 50
+                              }"
+                                                          x-text="'Score: ' + suggestion.meta.score">
+                        </span>
+                                                </div>
+
+                                                <!-- Uniqueness indicator -->
+                                                <div class="mt-2 flex items-center text-xs">
+                                                    <div class="flex items-center">
+                                                        <div class="w-2 h-2 rounded-full mr-1"
+                                                             :class="{
+                                     'bg-green-500': suggestion.meta.score >= 75,
+                                     'bg-yellow-500': suggestion.meta.score >= 50 && suggestion.meta.score < 75,
+                                     'bg-red-500': suggestion.meta.score < 50
+                                 }">
+                                                        </div>
+                                                        <span class="text-text-secondary"
+                                                              x-text="suggestion.meta.score >= 75 ? 'High uniqueness' :
+                                         suggestion.meta.score >= 50 ? 'Medium uniqueness' : 'Low uniqueness'">
+                            </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
                                     </div>
@@ -374,6 +415,21 @@
 
                     // Auto-generate password when selecting an email
                     this.generatePassword();
+                },
+
+                // Add this new method
+                getEmailFeatures(email) {
+                    const features = [];
+                    const localPart = email.split('@')[0];
+
+                    if (localPart.includes('_')) features.push('Underscore');
+                    if (localPart.includes('.')) features.push('Dot separator');
+                    if (/\d/.test(localPart)) features.push('Numbers');
+                    if (/19[0-9]{2}|20[0-2][0-9]/.test(localPart)) features.push('Year');
+                    if (localPart.length >= 12) features.push('Long format');
+                    if (/[a-z]+\d+[a-z]+/.test(localPart)) features.push('Mixed pattern');
+
+                    return features.slice(0, 3); // Show max 3 features
                 },
 
                 generatePassword() {

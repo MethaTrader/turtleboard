@@ -98,3 +98,68 @@
     .delay-200 { animation-delay: 0.2s; }
     .delay-300 { animation-delay: 0.3s; }
 }
+
+/* Best choice suggestion styling */
+.email-suggestion-best {
+    background: linear-gradient(135deg, rgba(0, 222, 163, 0.1) 0%, rgba(90, 85, 210, 0.05) 100%);
+    border-color: #00DEA3 !important;
+    position: relative;
+}
+
+.email-suggestion-best:hover {
+    background: linear-gradient(135deg, rgba(0, 222, 163, 0.15) 0%, rgba(90, 85, 210, 0.1) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 222, 163, 0.15);
+}
+
+/* Best choice badge animation */
+.best-choice-badge {
+    animation: bestChoicePulse 2s infinite;
+}
+
+@keyframes bestChoicePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 222, 163, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 222, 163, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 222, 163, 0);
+    }
+}
+
+/* Score indicators */
+.score-indicator-high {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.score-indicator-medium {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.score-indicator-low {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white;
+    font-weight: 600;
+}
+
+/* Uniqueness dots */
+.uniqueness-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Email suggestion hover effects */
+.email-suggestion:not(.email-suggestion-best):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

@@ -26,7 +26,15 @@
     <!-- Stack for Page-Specific Styles -->
     @stack('styles')
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased"
+      data-page="{{
+          Route::is('dashboard') ? 'dashboard' :
+          (Route::is('accounts.mexc') ? 'mexc-accounts' :
+          (Route::is('accounts.email') ? 'email-accounts' :
+          (Route::is('accounts.proxy') ? 'proxies' :
+          (Route::is('accounts.web3') ? 'web3-wallets' :
+          'dashboard'))))
+      }}">
 <div class="min-h-screen bg-background">
 
     <!-- Include Sidebar Component -->

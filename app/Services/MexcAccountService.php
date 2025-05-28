@@ -68,6 +68,6 @@ class MexcAccountService
      */
     public function delete(MexcAccount $mexcAccount): bool
     {
-        return $mexcAccount->delete();
+        return $mexcAccount->delete() ?? false;
     }
 }

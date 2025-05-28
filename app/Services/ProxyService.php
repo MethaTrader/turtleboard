@@ -174,16 +174,16 @@ class ProxyService
      * Delete a proxy.
      *
      * @param Proxy $proxy
-     * @return bool|null
+     * @return bool
      */
-    public function delete(Proxy $proxy): ?bool
+    public function delete(Proxy $proxy): bool
     {
         // Check if the proxy is associated with an email account
         if ($proxy->emailAccount) {
             throw new \Exception('Cannot delete proxy that is linked to an email account.');
         }
 
-        return $proxy->delete();
+        return $proxy->delete() ?? false;
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ActivityService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,15 @@ use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
+
+    // Inject ActivityService in constructor:
+    protected $activityService;
+
+    public function __construct(ActivityService $activityService)
+    {
+        $this->activityService = $activityService;
+    }
+
     /**
      * Display the registration view.
      */
@@ -22,11 +32,7 @@ class RegisteredUserController extends Controller
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+    // Update the store method to log registration activity:
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -35,19 +41,19 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Check if this is the first user (make them admin) or set default role
-        $role = User::count() === 0 ? 'administrator' : 'account_manager';
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $role,
         ]);
 
-        event(new Registered($user));
+        $user->sendEmailVerificationNotification();
 
-        Auth::login($user);
+        // Log the user registration activity
+        Auth::login($user); // Login first so we have authenticated user
+        $this->activityService->logUserRegistration($user);
+
+        event(new Registered($user));
 
         return redirect(route('dashboard', absolute: false));
     }

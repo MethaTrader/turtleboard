@@ -121,6 +121,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the activities performed by this user.
+     *
+     * @return HasMany
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    /**
      * Get the Web3 wallets created by the user.
      *
      * @return HasMany

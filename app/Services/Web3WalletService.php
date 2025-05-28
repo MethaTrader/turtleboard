@@ -96,7 +96,7 @@ class Web3WalletService
             'user_id' => Auth::id(),
         ]);
 
-        return $wallet->delete();
+        return $wallet->delete() ?? false;
     }
 
     /**

@@ -93,6 +93,6 @@ class EmailAccountService
             throw new \Exception('Cannot delete email account that is linked to a MEXC account.');
         }
 
-        return $emailAccount->delete();
+        return $emailAccount->delete() ?? false;
     }
 }

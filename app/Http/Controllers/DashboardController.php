@@ -7,12 +7,20 @@ use App\Models\EmailAccount;
 use App\Models\MexcAccount;
 use App\Models\Proxy;
 use App\Models\Web3Wallet;
+use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
+    protected $activityService;
+
+    public function __construct(ActivityService $activityService)
+    {
+        $this->activityService = $activityService;
+    }
+
     /**
      * Display the dashboard view with statistics.
      *
@@ -49,30 +57,13 @@ class DashboardController extends Controller
             'Rambler' => EmailAccount::where('provider', 'Rambler')->count(),
         ];
 
-        // Sample recent activities for the user
-        $userActivities = [
-            [
-                'type' => 'mexc',
-                'action' => 'Added MEXC Account',
-                'details' => 'wallet_34521@gmail.com',
-                'status' => 'completed',
-                'time' => '2 hours ago'
-            ],
-            [
-                'type' => 'email',
-                'action' => 'Created Email Account',
-                'details' => 'new_account@outlook.com',
-                'status' => 'completed',
-                'time' => 'Yesterday at 9:15 AM'
-            ],
-            [
-                'type' => 'web3',
-                'action' => 'Connected Web3 Wallet',
-                'details' => '0x742...8F31',
-                'status' => 'pending',
-                'time' => 'May 22, 2023 at 2:30 PM'
-            ],
-        ];
+        // Get real recent activities for the authenticated user
+        $recentActivities = $this->activityService->getRecentActivities(auth()->id(), 5);
+
+        // Format activities for display
+        $userActivities = $recentActivities->map(function ($activity) {
+            return $this->activityService->getActivityDetails($activity);
+        });
 
         // Check if user needs onboarding - session-based approach
         $needsOnboarding = false;
@@ -123,8 +114,8 @@ class DashboardController extends Controller
                 'connectedWallets' => $connectedWallets,
             ],
             'emailProviderStats' => $emailProviderStats,
-            'userActivities' => $userActivities,
-            'needsOnboarding' => $needsOnboarding, // Pass to the view
+            'userActivities' => $userActivities, // Real activities instead of placeholder
+            'needsOnboarding' => $needsOnboarding,
         ]);
     }
 }

@@ -178,63 +178,55 @@
             <div class="bg-card p-6 rounded-card shadow-card lg:col-span-3 animate-fadeInUp delay-200">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-semibold text-text-primary">Your Recent Activities</h3>
+                    @if($userActivities->count() > 0)
+                        <a href="{{ route('activities.index') }}" class="text-sm text-secondary hover:text-secondary/80 transition-colors duration-200">
+                            View All
+                        </a>
+                    @endif
                 </div>
 
-                <div class="space-y-4">
-                    <!-- Activity 1 -->
-                    <div class="flex items-center border-b border-gray-100 pb-4">
-                        <div class="h-10 w-10 rounded-lg bg-secondary/10 flex items-center justify-center mr-4">
-                            <i class="fas fa-wallet text-secondary"></i>
+                @if($userActivities->count() > 0)
+                    <div class="space-y-4">
+                        @foreach($userActivities as $activity)
+                            <div class="flex items-center border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                                <div class="h-10 w-10 rounded-lg {{ $activity['color_classes'] }} flex items-center justify-center mr-4">
+                                    <i class="{{ $activity['icon'] }}"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">{{ $activity['action'] }}</span>
+                                        <span class="text-sm text-text-secondary">{{ $activity['time'] }}</span>
+                                    </div>
+                                    <div class="flex justify-between mt-1">
+                                        <span class="text-sm text-text-secondary">{{ $activity['details'] }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <!-- Empty state -->
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-history text-gray-400 text-xl"></i>
                         </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between">
-                                <span class="font-medium">Added MEXC Account</span>
-                                <span class="text-sm text-text-secondary">2 hours ago</span>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span class="text-sm text-text-secondary">wallet_34521@gmail.com</span>
-                                <span class="status-tag status-completed">Completed</span>
-                            </div>
+                        <h4 class="text-lg font-medium text-text-primary mb-2">No Recent Activities</h4>
+                        <p class="text-text-secondary mb-4">Start by creating your first account to see activities here.</p>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <a href="{{ route('accounts.email.create') }}" class="inline-flex items-center px-3 py-2 bg-secondary text-white text-sm rounded-md hover:bg-secondary/90 transition-colors">
+                                <i class="fas fa-envelope mr-2"></i>
+                                Add Email Account
+                            </a>
+                            <a href="{{ route('accounts.mexc.create') }}" class="inline-flex items-center px-3 py-2 bg-primary text-white text-sm rounded-md hover:bg-primary/90 transition-colors">
+                                <i class="fas fa-wallet mr-2"></i>
+                                Add MEXC Account
+                            </a>
                         </div>
                     </div>
-
-                    <!-- Activity 2 -->
-                    <div class="flex items-center border-b border-gray-100 pb-4">
-                        <div class="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center mr-4">
-                            <i class="fas fa-envelope text-purple-500"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between">
-                                <span class="font-medium">Created Email Account</span>
-                                <span class="text-sm text-text-secondary">Yesterday at 9:15 AM</span>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span class="text-sm text-text-secondary">new_account@outlook.com</span>
-                                <span class="status-tag status-completed">Completed</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Activity 3 -->
-                    <div class="flex items-center">
-                        <div class="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center mr-4">
-                            <i class="fas fa-link text-amber-800"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between">
-                                <span class="font-medium">Connected Web3 Wallet</span>
-                                <span class="text-sm text-text-secondary">May 22, 2023 at 2:30 PM</span>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span class="text-sm text-text-secondary">0x742...8F31</span>
-                                <span class="status-tag status-pending">Pending</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @endif
             </div>
 
-            <!-- Team Card -->
+            <!-- Team Card (unchanged) -->
             <div class="bg-card p-6 rounded-card shadow-card animate-fadeInUp delay-300">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-semibold text-text-primary">Team</h3>

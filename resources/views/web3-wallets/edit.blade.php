@@ -25,25 +25,30 @@
                         <div class="md:col-span-2">
                             <div class="bg-gray-50 p-4 rounded-md mb-6">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-12 w-12 rounded-full
+                                    <div class="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center mr-4
                                         @if($wallet->network === 'ethereum')
-                                            bg-blue-100 text-blue-800
+                                            bg-blue-100
                                         @elseif($wallet->network === 'binance')
-                                            bg-yellow-100 text-yellow-800
+                                            bg-yellow-100
                                         @else
-                                            bg-purple-100 text-purple-800
-                                        @endif
-                                        flex items-center justify-center mr-4">
+                                            bg-purple-100
+                                        @endif">
                                         @if($wallet->network === 'ethereum')
-                                            <i class="fab fa-ethereum text-2xl"></i>
+                                            <i class="fab fa-ethereum text-blue-500 text-2xl"></i>
                                         @elseif($wallet->network === 'binance')
-                                            <i class="fas fa-coins text-2xl"></i>
+                                            <i class="fas fa-coins text-yellow-600 text-2xl"></i>
                                         @else
-                                            <i class="fas fa-network-wired text-2xl"></i>
+                                            <i class="fas fa-network-wired text-purple-500 text-2xl"></i>
                                         @endif
                                     </div>
                                     <div>
-                                        <div class="text-text-primary font-medium">{{ ucfirst($wallet->network) }} Network</div>
+                                        <div class="text-text-primary font-medium">
+                                            {{ ucfirst($wallet->network) }}
+                                            @if($wallet->network === 'binance')
+                                                Smart Chain
+                                            @endif
+                                            Network
+                                        </div>
                                         <div class="text-text-secondary text-xs">Created {{ $wallet->created_at->format('M d, Y') }}</div>
                                     </div>
                                 </div>

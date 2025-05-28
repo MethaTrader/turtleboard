@@ -154,6 +154,7 @@ class Web3WalletController extends Controller
                 'success' => true,
                 'address' => $web3Wallet->address,
                 'seed_phrase' => $web3Wallet->seed_phrase, // This will be automatically decrypted by the model's accessor
+                'network' => $web3Wallet->network, // Include network information
                 'connected_to' => $web3Wallet->mexcAccount ? $web3Wallet->mexcAccount->emailAccount->email_address : null,
                 'created_at' => $web3Wallet->created_at->format('M d, Y'),
             ]);

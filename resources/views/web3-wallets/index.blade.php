@@ -118,9 +118,6 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                                 Created
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                                Created By
-                            </th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                                 Actions
                             </th>
@@ -145,16 +142,30 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        @if($wallet->network === 'ethereum')
-                                            bg-blue-100 text-blue-800
-                                        @elseif($wallet->network === 'binance')
-                                            bg-yellow-100 text-yellow-800
-                                        @else
-                                            bg-purple-100 text-purple-800
-                                        @endif">
-                                        {{ ucfirst($wallet->network) }}
-                                    </span>
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center mr-3
+                                            @if($wallet->network === 'ethereum')
+                                                bg-blue-100
+                                            @elseif($wallet->network === 'binance')
+                                                bg-yellow-100
+                                            @else
+                                                bg-purple-100
+                                            @endif">
+                                            @if($wallet->network === 'ethereum')
+                                                <i class="fab fa-ethereum text-blue-500 text-lg"></i>
+                                            @elseif($wallet->network === 'binance')
+                                                <i class="fas fa-coins text-yellow-600 text-lg"></i>
+                                            @else
+                                                <i class="fas fa-network-wired text-purple-500 text-lg"></i>
+                                            @endif
+                                        </div>
+                                        <span class="text-sm font-medium text-text-primary">
+                                            {{ ucfirst($wallet->network) }}
+                                            @if($wallet->network === 'binance')
+                                                Smart Chain
+                                            @endif
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @if($wallet->mexcAccount)
@@ -169,9 +180,6 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                                     {{ $wallet->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-text-primary">{{ $wallet->user->name }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onclick="viewWalletDetails({{ $wallet->id }})"
@@ -231,6 +239,14 @@
 
                 <!-- Modal Content -->
                 <div id="modalContent" class="hidden">
+                    <!-- Network Display -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-text-secondary mb-1">Network</label>
+                        <div id="modalNetworkDisplay" class="flex items-center p-3 bg-gray-50 rounded-md">
+                            <!-- Network icon and name will be populated via JavaScript -->
+                        </div>
+                    </div>
+
                     <!-- Address Field -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-text-secondary mb-1">Wallet Address</label>
@@ -304,6 +320,9 @@
 
 @push('scripts')
     <script>
+        // Store current wallet data for modal display
+        let currentWalletData = null;
+
         // View wallet details
         async function viewWalletDetails(walletId) {
             const modal = document.getElementById('walletDetailsModal');
@@ -335,10 +354,14 @@
                 }
 
                 const data = await response.json();
+                currentWalletData = data; // Store for reference
 
                 // Populate modal with data
                 document.getElementById('modalAddress').value = data.address;
                 document.getElementById('modalSeedPhrase').value = data.seed_phrase;
+
+                // Display network with icon
+                displayNetworkInModal(data.network);
 
                 // Set connection status
                 const connectionStatus = document.getElementById('connectionStatus');
@@ -365,6 +388,37 @@
             }
         }
 
+        // Display network information in modal
+        function displayNetworkInModal(network) {
+            const networkDisplay = document.getElementById('modalNetworkDisplay');
+
+            let iconClass, bgClass, networkName;
+
+            switch(network) {
+                case 'ethereum':
+                    iconClass = 'fab fa-ethereum text-blue-500';
+                    bgClass = 'bg-blue-100';
+                    networkName = 'Ethereum';
+                    break;
+                case 'binance':
+                    iconClass = 'fas fa-coins text-yellow-600';
+                    bgClass = 'bg-yellow-100';
+                    networkName = 'Binance Smart Chain';
+                    break;
+                default:
+                    iconClass = 'fas fa-network-wired text-purple-500';
+                    bgClass = 'bg-purple-100';
+                    networkName = 'Unknown Network';
+            }
+
+            networkDisplay.innerHTML = `
+                <div class="w-8 h-8 flex-shrink-0 rounded-full ${bgClass} flex items-center justify-center mr-3">
+                    <i class="${iconClass} text-lg"></i>
+                </div>
+                <span class="text-text-primary font-medium">${networkName}</span>
+            `;
+        }
+
         // Close wallet details modal
         function closeWalletDetailsModal() {
             const modal = document.getElementById('walletDetailsModal');
@@ -372,6 +426,7 @@
 
             // Reset seed phrase visibility
             hideSeedPhrase();
+            currentWalletData = null;
         }
 
         // Hide seed phrase

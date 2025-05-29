@@ -10,6 +10,7 @@ use App\Http\Controllers\MexcAccountController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProxyController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\Web3WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,23 @@ Route::get('/', function () {
 
 // Authentication routes
 require __DIR__.'/auth.php';
+
+// Referrals Management Routes
+Route::middleware(['account.manager'])->prefix('referrals')->name('referrals.')->group(function () {
+    Route::get('/', [ReferralController::class, 'index'])->name('index');
+    Route::get('/create', [ReferralController::class, 'create'])->name('create');
+    Route::post('/', [ReferralController::class, 'store'])->name('store');
+    Route::get('/{referral}/edit', [ReferralController::class, 'edit'])->name('edit');
+    Route::put('/{referral}', [ReferralController::class, 'update'])->name('update');
+    Route::delete('/{referral}', [ReferralController::class, 'destroy'])->name('destroy');
+
+    // AJAX endpoint for network visualization data
+    Route::get('/network-data', [ReferralController::class, 'networkData'])->name('network-data');
+
+    // Additional status management routes
+    Route::post('/{referral}/complete', [ReferralController::class, 'markAsCompleted'])->name('complete');
+    Route::post('/{referral}/fail', [ReferralController::class, 'markAsFailed'])->name('fail');
+});
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {

@@ -8,7 +8,8 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/charts.js',
-                'resources/js/onboarding.js'
+                'resources/js/onboarding.js',
+                'resources/js/referral-network.js'
             ],
             refresh: true,
         }),

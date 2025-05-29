@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
@@ -79,6 +80,26 @@ class MexcAccount extends Model
     }
 
     /**
+     * Get the referrals where this account is the inviter.
+     *
+     * @return HasMany
+     */
+    public function sentInvitations(): HasMany
+    {
+        return $this->hasMany(MexcReferral::class, 'inviter_account_id');
+    }
+
+    /**
+     * Get the referral where this account was invited (if any).
+     *
+     * @return BelongsTo
+     */
+    public function receivedInvitation(): BelongsTo
+    {
+        return $this->belongsTo(MexcReferral::class, 'id', 'invitee_account_id');
+    }
+
+    /**
      * Scope a query to only include active MEXC accounts.
      *
      * @param  Builder  $query
@@ -122,5 +143,45 @@ class MexcAccount extends Model
             'proxy' => $this->emailAccount?->proxy,
             'web3_wallet' => $this->web3Wallet,
         ];
+    }
+
+    /**
+     * Check if this account can invite more accounts (limit is 5).
+     *
+     * @return bool
+     */
+    public function canInviteMore(): bool
+    {
+        return $this->sentInvitations()->count() < 5;
+    }
+
+    /**
+     * Get the remaining invitation slots for this account.
+     *
+     * @return int
+     */
+    public function getRemainingInvitationSlots(): int
+    {
+        return 5 - $this->sentInvitations()->count();
+    }
+
+    /**
+     * Get the total rewards earned by this account.
+     *
+     * @return float
+     */
+    public function getTotalRewards(): float
+    {
+        return MexcReferral::getTotalRewardAmount($this->id);
+    }
+
+    /**
+     * Check if this account has already been invited.
+     *
+     * @return bool
+     */
+    public function isAlreadyInvited(): bool
+    {
+        return MexcReferral::where('invitee_account_id', $this->id)->exists();
     }
 }

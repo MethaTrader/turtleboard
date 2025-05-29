@@ -72,6 +72,14 @@
                 </li>
 
                 <li>
+                    <a href="{{ route('referrals.index') }}"
+                       class="sidebar-item {{ request()->routeIs('referrals.*') ? 'active' : '' }}">
+                        <i class="fas fa-users-arrows mr-3 w-5 text-center"></i>
+                        <span>Referrals</span>
+                    </a>
+                </li>
+
+                <li>
                     <a href="{{ route('relationships') }}"
                        class="sidebar-item"
                        :class="{'active': activeMenu === 'relationships'}">

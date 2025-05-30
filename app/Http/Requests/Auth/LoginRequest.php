@@ -27,8 +27,39 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sso_code' => [
+                'required',
+                'string',
+                'size:5',
+                'regex:/^[A-Za-z0-9]{5}$/',
+                function ($attribute, $value, $fail) {
+                    $expectedCode = config('auth.sso_code');
+                    if (empty($expectedCode)) {
+                        $fail('SSO protection is not properly configured.');
+                        return;
+                    }
+
+                    if (strtoupper($value) !== strtoupper($expectedCode)) {
+                        $fail('The SSO code is incorrect.');
+                    }
+                },
+            ],
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Get custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'sso_code.required' => 'The SSO code is required.',
+            'sso_code.size' => 'The SSO code must be exactly 5 characters.',
+            'sso_code.regex' => 'The SSO code must contain only letters and numbers.',
         ];
     }
 
@@ -41,6 +72,10 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        // First validate the SSO code
+        $this->validateSsoCode();
+
+        // Then attempt authentication with email and password
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
@@ -50,6 +85,29 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Validate the SSO code before proceeding with authentication.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function validateSsoCode(): void
+    {
+        $ssoCode = $this->input('sso_code');
+        $expectedCode = config('auth.sso_code');
+
+        if (empty($expectedCode)) {
+            throw ValidationException::withMessages([
+                'sso_code' => 'SSO protection is not properly configured.',
+            ]);
+        }
+
+        if (empty($ssoCode) || strtoupper($ssoCode) !== strtoupper($expectedCode)) {
+            throw ValidationException::withMessages([
+                'sso_code' => 'The SSO code is incorrect.',
+            ]);
+        }
     }
 
     /**

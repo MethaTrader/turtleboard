@@ -74,12 +74,12 @@
                 <li>
                     <a href="{{ route('referrals.index') }}"
                        class="sidebar-item {{ request()->routeIs('referrals.*') ? 'active' : '' }}">
-                        <i class="fas fa-users-arrows mr-3 w-5 text-center"></i>
+                        <i class="fas fa-users mr-3 w-5 text-center"></i>
                         <span>Referrals</span>
                     </a>
                 </li>
 
-                <li>
+                <li class="opacity-40">
                     <a href="{{ route('relationships') }}"
                        class="sidebar-item"
                        :class="{'active': activeMenu === 'relationships'}">
@@ -88,12 +88,12 @@
                     </a>
                 </li>
 
-                <li>
-                    <a href="{{ route('validation') }}"
+                <li class="opacity-40">
+                    <a href="#"
                        class="sidebar-item"
                        :class="{'active': activeMenu === 'validation'}">
                         <i class="fas fa-check-circle text-lg w-6"></i>
-                        <span class="ml-3">Validation</span>
+                        <span class="ml-3">KPI</span>
                     </a>
                 </li>
 

@@ -22,7 +22,8 @@ return new class extends Migration
                 'mexc_account',
                 'web3_wallet',
                 'balance', // For future balance activities
-                'kpi_goal' // For future KPI activities
+                'kpi_goal', // For future KPI activities
+                'mexc_referral'
             ]);
             $table->unsignedBigInteger('entity_id')->nullable(); // Nullable for user registration
             $table->string('description');

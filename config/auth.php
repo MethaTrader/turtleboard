@@ -7,7 +7,7 @@ return [
     | Authentication Defaults
     |--------------------------------------------------------------------------
     |
-    | This option defines the default authentication "guard" and password
+    | This option controls the default authentication "guard" and password
     | reset "broker" for your application. You may change these values
     | as required, but they're a perfect start for most applications.
     |
@@ -25,7 +25,7 @@ return [
     |
     | Next, you may define every authentication guard for your application.
     | Of course, a great default configuration has been defined for you
-    | which utilizes session storage plus the Eloquent user provider.
+    | here which uses session storage and the Eloquent user provider.
     |
     | All authentication guards have a user provider, which defines how the
     | users are actually retrieved out of your database or other storage
@@ -111,5 +111,18 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    /*
+    |--------------------------------------------------------------------------
+    | SSO Protection Code
+    |--------------------------------------------------------------------------
+    |
+    | This code is used to protect against unauthorized registrations and logins.
+    | It must be a 5-character alphanumeric code defined in the .env file.
+    | This adds an extra layer of security before credential validation.
+    |
+    */
+
+    'sso_code' => env('SSO_CODE'),
 
 ];

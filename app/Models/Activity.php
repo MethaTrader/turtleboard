@@ -53,6 +53,7 @@ class Activity extends Model
     public const ENTITY_WEB3_WALLET = 'web3_wallet';
     public const ENTITY_BALANCE = 'balance';
     public const ENTITY_KPI_GOAL = 'kpi_goal';
+    public const ENTITY_MEXC_REFERRAL = 'mexc_referral'; // Add this line
 
     /**
      * Icon mapping for different entity types and actions
@@ -65,6 +66,7 @@ class Activity extends Model
         self::ENTITY_WEB3_WALLET => 'fas fa-link',
         self::ENTITY_BALANCE => 'fas fa-coins',
         self::ENTITY_KPI_GOAL => 'fas fa-target',
+        self::ENTITY_MEXC_REFERRAL => 'fas fa-users', // Add this line
     ];
 
     /**
@@ -78,6 +80,7 @@ class Activity extends Model
         self::ENTITY_WEB3_WALLET => 'bg-amber-100 text-amber-800',
         self::ENTITY_BALANCE => 'bg-green-100 text-green-500',
         self::ENTITY_KPI_GOAL => 'bg-indigo-100 text-indigo-500',
+        self::ENTITY_MEXC_REFERRAL => 'bg-pink-100 text-pink-500', // Add this line
     ];
 
     /**
@@ -196,6 +199,7 @@ class Activity extends Model
             self::ENTITY_WEB3_WALLET => 'Web3 Wallet',
             self::ENTITY_BALANCE => 'Balance',
             self::ENTITY_KPI_GOAL => 'KPI Goal',
+            self::ENTITY_MEXC_REFERRAL => 'MEXC Referral', // Add this line
             default => 'Item',
         };
     }

@@ -47,7 +47,7 @@ class CompleteAccountChainSeeder extends Seeder
                     ]);
 
                     // Create an email account with a guaranteed unique email
-                    $randomEmail = 'user' . Str::random(10) . '@' . ['gmail.com', 'outlook.com', 'yahoo.com', 'rambler.ru'][rand(0, 3)];
+                    $randomEmail = 'user' . Str::random(10) . '@' . ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'][rand(0, 3)];
 
                     $emailAccount = EmailAccount::factory()->active()->create([
                         'user_id' => $admin->id,

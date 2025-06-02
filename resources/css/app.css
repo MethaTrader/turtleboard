@@ -1,3 +1,6 @@
+/* Add this line to resources/css/app.css */
+@import './referral-network.css';
+
 @import 'shepherd.js/dist/css/shepherd.css';
 @import './shepherd-custom.css';
 
@@ -44,8 +47,8 @@
     /* Balance Card */
     .balance-card {
         @apply rounded-card text-white relative overflow-hidden;
-        background: linear-gradient(135deg, theme('colors.secondary') 0%, #7A76E6 100%);
-        box-shadow: 0 10px 25px rgba(90, 85, 210, 0.3);
+        background: linear-gradient(135deg, theme('colors.primary') 0%, #00C090 100%);
+        box-shadow: 0 10px 25px rgba(0, 222, 163, 0.3);
     }
 
     .credit-card {

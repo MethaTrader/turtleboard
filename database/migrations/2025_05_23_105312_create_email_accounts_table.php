@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('email_accounts', function (Blueprint $table) {
             $table->id();
-            $table->enum('provider', ['Gmail', 'Outlook', 'Yahoo', 'Rambler']);
+            $table->enum('provider', ['Gmail', 'Outlook', 'Yahoo', 'iCloud']);
             $table->string('email_address')->unique();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();

@@ -48,18 +48,22 @@ class ReferralController extends Controller
     /**
      * Get the referral network data for visualization.
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function networkData(): JsonResponse
+    public function networkData(Request $request): JsonResponse
     {
         try {
-            // Get all active MEXC accounts
-            $accounts = MexcAccount::with(['emailAccount', 'sentInvitations.inviteeAccount.emailAccount'])
-                ->where('status', 'active')
-                ->get();
+            // Apply period filter if provided
+            $period = $request->input('period');
+            $query = MexcAccount::with(['emailAccount', 'sentInvitations.inviteeAccount.emailAccount'])
+                ->where('status', 'active');
 
             $nodes = [];
             $edges = [];
+
+            // Get all active MEXC accounts
+            $accounts = $query->get();
 
             // Create nodes for all accounts
             foreach ($accounts as $account) {
@@ -67,14 +71,20 @@ class ReferralController extends Controller
                 $sentInvitationsCount = $account->sentInvitations->count();
                 $remainingSlots = 5 - $sentInvitationsCount;
 
+                // Get email provider for icon
+                $providerIcon = $this->getProviderIcon($account->emailAccount->provider);
+
                 $nodes[] = [
                     'id' => $account->id,
                     'label' => $account->emailAccount->email_address,
                     'group' => $isInvited ? 'invitee' : 'root',
                     'title' => $this->generateNodeTooltip($account, $sentInvitationsCount, $remainingSlots),
                     'value' => max(15, min(35, 15 + ($sentInvitationsCount * 4))), // Node size based on activity
+                    'shape' => 'circularImage',  // Use image-based node
+                    'image' => $providerIcon,    // Set the provider icon as image
                     'data' => [
                         'email' => $account->emailAccount->email_address,
+                        'provider' => $account->emailAccount->provider,
                         'sentInvitations' => $sentInvitationsCount,
                         'remainingSlots' => $remainingSlots,
                         'isInvited' => $isInvited,
@@ -82,8 +92,19 @@ class ReferralController extends Controller
                 ];
             }
 
+            // Get referrals with optional period filtering
+            $referralsQuery = MexcReferral::with(['inviterAccount', 'inviteeAccount']);
+
+            if ($period) {
+                // Filter by period if specified
+                $referralsQuery->where('created_at', '>=', $period);
+                $nextPeriod = date('Y-m-d', strtotime($period . ' +15 days'));
+                $referralsQuery->where('created_at', '<', $nextPeriod);
+            }
+
+            $referrals = $referralsQuery->get();
+
             // Create edges for invitations
-            $referrals = MexcReferral::with(['inviterAccount', 'inviteeAccount'])->get();
             foreach ($referrals as $referral) {
                 $edges[] = [
                     'id' => $referral->id,
@@ -96,6 +117,7 @@ class ReferralController extends Controller
                     'data' => [
                         'status' => $referral->status,
                         'created_at' => $referral->created_at->format('M d, Y'),
+                        'referral_link' => $referral->referral_link,
                     ]
                 ];
             }
@@ -105,6 +127,9 @@ class ReferralController extends Controller
                 'nodes' => $nodes,
                 'edges' => $edges,
                 'stats' => MexcReferral::getStatistics(),
+                'filter' => [
+                    'period' => $period ?: 'all'
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error generating network data: ' . $e->getMessage(), [
@@ -148,6 +173,7 @@ class ReferralController extends Controller
                     'inviter' => $referral->inviterAccount->emailAccount->email_address,
                     'invitee' => $referral->inviteeAccount->emailAccount->email_address,
                     'status' => $referral->status,
+                    'referral_link' => $referral->referral_link,
                 ]
             );
 
@@ -162,6 +188,7 @@ class ReferralController extends Controller
                     'invitee_account_id' => $referral->invitee_account_id,
                     'status' => $referral->status,
                     'status_color' => $referral->getStatusColor(),
+                    'referral_link' => $referral->referral_link,
                     'created_at' => $referral->created_at->format('M d, Y'),
                     'inviter_email' => $referral->inviterAccount->emailAccount->email_address,
                     'invitee_email' => $referral->inviteeAccount->emailAccount->email_address,
@@ -297,6 +324,7 @@ class ReferralController extends Controller
                 'account' => [
                     'id' => $account->id,
                     'email' => $account->emailAccount->email_address,
+                    'provider' => $account->emailAccount->provider,
                     'status' => $account->status,
                     'sent_invitations' => $sentInvitations,
                     'remaining_slots' => 5 - $sentInvitations,
@@ -324,8 +352,9 @@ class ReferralController extends Controller
     private function generateNodeTooltip(MexcAccount $account, int $sentInvitations, int $remainingSlots): string
     {
         return sprintf(
-            "%s\nSent: %d/5 invitations\nRemaining: %d slots\nStatus: %s",
+            "%s\nProvider: %s\nSent: %d/5 invitations\nRemaining: %d slots\nStatus: %s",
             $account->emailAccount->email_address,
+            $account->emailAccount->provider,
             $sentInvitations,
             $remainingSlots,
             ucfirst($account->status)
@@ -340,12 +369,36 @@ class ReferralController extends Controller
      */
     private function generateEdgeTooltip(MexcReferral $referral): string
     {
-        return sprintf(
+        $tooltip = sprintf(
             "Referral: %s → %s\nStatus: %s\nCreated: %s",
             $referral->inviterAccount->emailAccount->email_address,
             $referral->inviteeAccount->emailAccount->email_address,
             $referral->getStatusLabel(),
             $referral->created_at->format('M d, Y')
         );
+
+        // Add referral link if available
+        if ($referral->referral_link) {
+            $tooltip .= sprintf("\nReferral Link: %s", $referral->referral_link);
+        }
+
+        return $tooltip;
+    }
+
+    /**
+     * Get provider icon URL based on email provider.
+     *
+     * @param string $provider
+     * @return string
+     */
+    private function getProviderIcon(string $provider): string
+    {
+        return match (strtolower($provider)) {
+            'gmail' => '/images/providers/google.png',
+            'outlook' => '/images/providers/microsoft.png',
+            'yahoo' => '/images/providers/yahoo.png',
+            'apple' => '/images/providers/apple.png',
+            default => '/images/providers/default.png',
+        };
     }
 }

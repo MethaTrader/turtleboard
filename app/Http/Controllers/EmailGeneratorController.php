@@ -12,7 +12,7 @@ class EmailGeneratorController extends Controller
     private array $domains = [
         'gmail' => 'gmail.com',
         'outlook' => ['outlook.com', 'hotmail.com'], // Both Outlook domains
-        'rambler' => 'rambler.ru',
+        'icloud' => 'icloud.com', // Fixed: changed 'iCloud' to 'icloud' to match validation
         'yahoo' => 'yahoo.com'
     ];
 
@@ -26,7 +26,7 @@ class EmailGeneratorController extends Controller
     public function generate(Request $request)
     {
         $validated = $request->validate([
-            'provider' => 'required|in:gmail,outlook,rambler,yahoo'
+            'provider' => 'required|in:gmail,outlook,icloud,yahoo'
         ]);
 
         $userData = $this->generateRealSlavicName();

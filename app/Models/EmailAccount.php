@@ -45,7 +45,7 @@ class EmailAccount extends Model
      *
      * @var array<string>
      */
-    public const PROVIDERS = ['Gmail', 'Outlook', 'Yahoo', 'Rambler'];
+    public const PROVIDERS = ['Gmail', 'Outlook', 'Yahoo', 'iCloud'];
 
     /**
      * Get the password attribute.

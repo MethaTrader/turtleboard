@@ -25,7 +25,7 @@ class EmailAccountRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'provider' => ['required', Rule::in(['Gmail', 'Outlook', 'Yahoo', 'Rambler'])],
+            'provider' => ['required', Rule::in(['Gmail', 'Outlook', 'Yahoo', 'iCloud'])],
             'email_address' => [
                 'required',
                 'email',

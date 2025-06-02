@@ -30,6 +30,7 @@ return new class extends Migration
             // Add indexes for better performance
             $table->index('inviter_account_id');
             $table->index('status');
+            $table->string('referral_link')->nullable();
             $table->index('created_at');
         });
     }

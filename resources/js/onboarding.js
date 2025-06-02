@@ -363,7 +363,7 @@ function initEmailAccountsTour() {
         text: `
             <h3 class="text-lg font-semibold text-text-primary mb-2">Adding Email Accounts</h3>
             <p class="text-text-secondary">Click this button to add a new email account.</p>
-            <p class="text-text-secondary mt-2">You can choose from Gmail, Outlook, Yahoo, or Rambler providers.</p>
+            <p class="text-text-secondary mt-2">You can choose from Gmail, Outlook, Yahoo, or iCloud providers.</p>
         `,
         attachTo: {
             element: '.bg-secondary.hover\\:bg-secondary\\/90',
@@ -382,7 +382,7 @@ function initEmailAccountsTour() {
                 <li>Gmail - Google mail accounts</li>
                 <li>Outlook - Microsoft email accounts</li>
                 <li>Yahoo - Yahoo mail accounts</li>
-                <li>Rambler - Rambler mail accounts</li>
+                <li>iCloud - iCloud mail accounts</li>
             </ul>
         `,
         attachTo: {

@@ -22,6 +22,7 @@ class MexcReferral extends Model
         'inviter_account_id',
         'invitee_account_id',
         'status',
+        'referral_link',
         'created_by',
     ];
 
@@ -198,7 +199,6 @@ class MexcReferral extends Model
             'pending' => $pending,
             'completed' => $completed,
             'cancelled' => $cancelled,
-            'completion_rate' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
         ];
     }
 

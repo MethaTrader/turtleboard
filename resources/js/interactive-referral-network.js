@@ -1,6 +1,7 @@
 // resources/js/interactive-referral-network.js
-import { DataSet } from 'vis-data/peer/esm/vis-data';
-import { Network } from 'vis-network/peer/esm/vis-network';
+import { DataSet } from 'vis-data';
+import { Network } from 'vis-network';
+
 
 class InteractiveReferralNetwork {
     constructor(containerId, dataUrl, createUrl) {
@@ -18,11 +19,34 @@ class InteractiveReferralNetwork {
     }
 
     initialize() {
-        this.loadData(this.dataUrl);
-        this.setupEventListeners();
+        console.log('Initializing network visualization...');
+
+        // Show a loading indicator
+        this.showLoading();
+
+        // Load the data with a small delay to ensure the DOM is ready
+        setTimeout(() => {
+            this.loadData(this.dataUrl);
+            this.setupEventListeners();
+        }, 100);
+    }
+
+    showLoading() {
+        if (!this.container) return;
+
+        this.container.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-secondary mx-auto mb-4"></div>
+                <p class="text-text-secondary">Loading network visualization...</p>
+            </div>
+        </div>
+    `;
     }
 
     loadData(url) {
+        console.log('Loading data from URL:', url);
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -31,31 +55,100 @@ class InteractiveReferralNetwork {
                 return response.json();
             })
             .then(data => {
+                console.log('Data loaded successfully:', data);
+
+                if (!data || !data.nodes || !data.edges) {
+                    console.error('Invalid data format received:', data);
+                    this.showError('Invalid data format received from server');
+                    return;
+                }
+
                 this.renderNetwork(data);
             })
             .catch(error => {
                 console.error('Error fetching network data:', error);
-                this.showError('Error loading visualization data');
+                this.showError(`Error loading visualization data: ${error.message}`);
             });
     }
 
     renderNetwork(data) {
+        // Clear the container
+        this.container.innerHTML = '';
+
         // Clear existing network if it exists
         if (this.network) {
             this.network.destroy();
         }
 
-        // Create data sets
-        this.nodes = new DataSet(data.nodes.map(node => ({
-            ...node,
-            borderWidth: 3,
-            borderWidthSelected: 4,
-            chosen: {
-                node: (values, id, selected, hovering) => {
-                    values.borderColor = selected ? '#00DEA3' : (hovering ? '#7A76E6' : '#ffffff');
+        // If no nodes, show empty state
+        if (data.nodes.length === 0) {
+            this.container.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-project-diagram text-gray-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-text-primary mb-2">No Referrals Found</h4>
+                        <p class="text-text-secondary mb-4">No referral connections matching your criteria.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Check if we have provider icons for each node
+        // If any node doesn't have a proper image, fallback to standard nodes
+        const useStandardNodes = data.nodes.some(node => !node.image || node.image.includes('default.png'));
+
+        // Create data sets with appropriate node styling
+        if (useStandardNodes) {
+            // Fallback to color-based nodes if images aren't available
+            this.nodes = new DataSet(data.nodes.map(node => ({
+                ...node,
+                shape: 'dot', // Use standard circular node
+                image: undefined, // Remove image property
+                color: {
+                    background: node.group === 'invitee' ? 'rgba(0,222,163,0.3)' : 'rgba(90,85,210,0.3)',
+                    border: '#ffffff',
+                    highlight: {
+                        background: node.group === 'invitee' ? '#00DEA3' : '#7A76E6',
+                        border: '#ffffff'
+                    },
+                    hover: {
+                        background: node.group === 'invitee' ? '#00DEA3' : '#7A76E6',
+                        border: '#ffffff'
+                    }
+                },
+                borderWidth: 3,
+                borderWidthSelected: 4,
+                chosen: {
+                    node: (values, id, selected, hovering) => {
+                        values.borderColor = selected ? '#00DEA3' : (hovering ? '#7A76E6' : '#ffffff');
+                    }
                 }
-            }
-        })));
+            })));
+        } else {
+            // Use email provider icons for nodes
+            this.nodes = new DataSet(data.nodes.map(node => ({
+                ...node,
+                size: node.group === 'invitee' ? 30 : 35, // Slightly larger for root nodes
+                borderWidth: 3,
+                borderWidthSelected: 4,
+                color: {
+                    border: '#ffffff',
+                    background: node.group === 'invitee' ? '#00DEA3' : '#5A55D2',
+                    highlight: {
+                        border: '#00DEA3',
+                        background: node.group === 'invitee' ? '#00DEA3' : '#5A55D2'
+                    }
+                },
+                chosen: {
+                    node: (values, id, selected, hovering) => {
+                        values.borderColor = selected ? '#00DEA3' : (hovering ? '#7A76E6' : '#ffffff');
+                    }
+                }
+            })));
+        }
 
         this.edges = new DataSet(data.edges.map(edge => ({
             ...edge,
@@ -67,8 +160,8 @@ class InteractiveReferralNetwork {
         // Enhanced network configuration for interactivity
         const options = {
             nodes: {
-                shape: 'dot',
-                size: 25,
+                shape: useStandardNodes ? 'dot' : 'circularImage',
+                size: 35,
                 font: {
                     size: 14,
                     color: '#2D3748',
@@ -85,18 +178,6 @@ class InteractiveReferralNetwork {
                 scaling: {
                     min: 20,
                     max: 40
-                },
-                color: {
-                    border: '#ffffff',
-                    background: '#5A55D2',
-                    highlight: {
-                        border: '#00DEA3',
-                        background: '#7A76E6'
-                    },
-                    hover: {
-                        border: '#00DEA3',
-                        background: '#7A76E6'
-                    }
                 }
             },
             edges: {
@@ -151,14 +232,14 @@ class InteractiveReferralNetwork {
                         background: '#5A55D2',
                         border: '#ffffff'
                     },
-                    size: 25
+                    size: 35
                 },
                 invitee: {
                     color: {
                         background: '#00DEA3',
                         border: '#ffffff'
                     },
-                    size: 22
+                    size: 30
                 }
             },
             interaction: {
@@ -195,6 +276,9 @@ class InteractiveReferralNetwork {
         this.network.once('stabilizationIterationsDone', () => {
             this.enableInteraction();
         });
+
+        // Store network instance globally for access from outside
+        window.referralNetwork = this;
     }
 
     setupNetworkEvents() {
@@ -202,6 +286,8 @@ class InteractiveReferralNetwork {
         this.network.on("click", (params) => {
             if (params.nodes.length > 0) {
                 this.handleNodeClick(params.nodes[0]);
+            } else if (params.edges.length > 0) {
+                this.handleEdgeClick(params.edges[0]);
             } else {
                 this.clearSelection();
             }
@@ -214,18 +300,16 @@ class InteractiveReferralNetwork {
             }
         });
 
-        // Handle edge selection
-        this.network.on("selectEdge", (params) => {
-            if (params.edges.length > 0) {
-                this.showEdgeDetails(params.edges[0]);
-            }
-        });
-
-        // Handle context menu for adding connections
+        // Handle context menu for edges (for deletion)
         this.network.on("oncontext", (params) => {
             params.event.preventDefault();
-            if (params.nodes.length > 0) {
-                this.showContextMenu(params.nodes[0], params.pointer.DOM);
+
+            if (params.edges.length > 0) {
+                // Edge context menu (for deletion)
+                this.showEdgeContextMenu(params.edges[0], params.pointer.DOM);
+            } else if (params.nodes.length > 0) {
+                // Node context menu (for adding connections)
+                this.showNodeContextMenu(params.nodes[0], params.pointer.DOM);
             }
         });
     }
@@ -233,9 +317,6 @@ class InteractiveReferralNetwork {
     enableInteraction() {
         // Add control panel
         this.createControlPanel();
-
-        // Show tutorial tooltip
-        this.showTutorial();
     }
 
     createControlPanel() {
@@ -367,6 +448,11 @@ class InteractiveReferralNetwork {
         }
     }
 
+    handleEdgeClick(edgeId) {
+        // Select the edge
+        this.network.selectEdges([edgeId]);
+    }
+
     handleConnectionModeClick(nodeId) {
         if (!this.selectedNodes.includes(nodeId)) {
             this.selectedNodes.push(nodeId);
@@ -447,9 +533,19 @@ class InteractiveReferralNetwork {
                         <i class="fas fa-link text-primary text-2xl"></i>
                     </div>
                     <h3 class="text-lg font-semibold text-text-primary mb-2">Create Referral Connection</h3>
-                    <p class="text-text-secondary mb-6">
+                    <p class="text-text-secondary mb-4">
                         <strong>${inviterEmail}</strong> will invite <strong>${inviteeEmail}</strong>
                     </p>
+                    
+                    <!-- Add referral link field -->
+                    <div class="mb-4">
+                        <label for="referral-link-input" class="block text-sm font-medium text-text-secondary text-left mb-1">
+                            Referral Link (optional)
+                        </label>
+                        <input type="text" id="referral-link-input" placeholder="https://www.mexc.com/register?ref=..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary">
+                    </div>
+                    
                     <div class="flex justify-center space-x-3">
                         <button id="cancelConnection" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded">
                             Cancel
@@ -467,15 +563,18 @@ class InteractiveReferralNetwork {
             });
 
             document.getElementById('confirmConnection')?.addEventListener('click', () => {
+                const referralLink = document.getElementById('referral-link-input')?.value || null;
                 this.closeModal(modal);
-                resolve(true);
+                resolve({ confirmed: true, referralLink });
             });
         });
     }
 
-    async submitConnection(inviterId, inviteeId) {
+    async submitConnection(inviterId, inviteeId, referralData) {
         try {
             this.showToast('Creating Connection...', 'Please wait', 'info');
+
+            const referralLink = referralData?.referralLink || null;
 
             const response = await fetch(this.createUrl, {
                 method: 'POST',
@@ -486,7 +585,8 @@ class InteractiveReferralNetwork {
                 },
                 body: JSON.stringify({
                     inviter_account_id: inviterId,
-                    invitee_account_id: inviteeId
+                    invitee_account_id: inviteeId,
+                    referral_link: referralLink
                 })
             });
 
@@ -499,8 +599,13 @@ class InteractiveReferralNetwork {
                     from: inviterId,
                     to: inviteeId,
                     color: { color: '#F59E0B' }, // Pending status color
-                    title: `Referral created on ${new Date().toLocaleDateString()}`,
-                    arrows: 'to'
+                    title: this.generateEdgeTooltip(result.referral),
+                    arrows: 'to',
+                    data: {
+                        status: result.referral.status,
+                        created_at: result.referral.created_at,
+                        referral_link: result.referral.referral_link
+                    }
                 };
 
                 this.edges.add(newEdge);
@@ -525,6 +630,16 @@ class InteractiveReferralNetwork {
         }
     }
 
+    generateEdgeTooltip(referral) {
+        let tooltip = `Referral: ${referral.inviter_email} → ${referral.invitee_email}\nStatus: ${referral.status}\nCreated: ${referral.created_at}`;
+
+        if (referral.referral_link) {
+            tooltip += `\nReferral Link: ${referral.referral_link}`;
+        }
+
+        return tooltip;
+    }
+
     showNodeDetails(nodeId) {
         const node = this.nodes.get(nodeId);
         const sentInvitations = this.edges.get({
@@ -533,12 +648,21 @@ class InteractiveReferralNetwork {
 
         const receivedInvitation = this.edges.get({
             filter: (edge) => edge.to === nodeId
-        }).length > 0;
+        });
+
+        const isInvited = receivedInvitation.length > 0;
+        let referralLink = '';
+
+        if (isInvited && receivedInvitation[0].data && receivedInvitation[0].data.referral_link) {
+            referralLink = receivedInvitation[0].data.referral_link;
+        }
+
+        const providerIcon = this.getProviderIcon(node.data.provider);
 
         const modal = this.createModal(`
             <div class="text-center">
-                <div class="w-16 h-16 ${node.group === 'invitee' ? 'bg-success/10' : 'bg-secondary/10'} rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-user ${node.group === 'invitee' ? 'text-success' : 'text-secondary'} text-2xl"></i>
+                <div class="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <img src="${providerIcon}" alt="${node.data.provider}" class="w-12 h-12 rounded-full" />
                 </div>
                 <h3 class="text-lg font-semibold text-text-primary mb-2">Account Details</h3>
                 <div class="space-y-3 text-left">
@@ -547,9 +671,13 @@ class InteractiveReferralNetwork {
                         <span class="font-medium text-text-primary ml-2">${node.label}</span>
                     </div>
                     <div>
+                        <span class="text-text-secondary">Provider:</span>
+                        <span class="font-medium text-text-primary ml-2">${node.data.provider}</span>
+                    </div>
+                    <div>
                         <span class="text-text-secondary">Type:</span>
-                        <span class="font-medium ml-2 ${receivedInvitation ? 'text-success' : 'text-secondary'}">
-                            ${receivedInvitation ? 'Invited Account' : 'Root Account'}
+                        <span class="font-medium ml-2 ${isInvited ? 'text-success' : 'text-secondary'}">
+                            ${isInvited ? 'Invited Account' : 'Root Account'}
                         </span>
                     </div>
                     <div>
@@ -562,6 +690,18 @@ class InteractiveReferralNetwork {
                             ${5 - sentInvitations}
                         </span>
                     </div>
+                    ${referralLink ? `
+                    <div class="mt-2">
+                        <span class="text-text-secondary block">Referral Link:</span>
+                        <div class="flex items-center mt-1">
+                            <input type="text" readonly value="${referralLink}" 
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50">
+                            <button id="copyReferralLink" class="ml-2 bg-secondary hover:bg-secondary/90 text-white px-3 py-2 rounded-md text-sm">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
                 <button id="closeNodeDetails" class="mt-6 bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded">
                     Close
@@ -571,6 +711,157 @@ class InteractiveReferralNetwork {
 
         document.getElementById('closeNodeDetails')?.addEventListener('click', () => {
             this.closeModal(modal);
+        });
+
+        document.getElementById('copyReferralLink')?.addEventListener('click', () => {
+            const linkInput = modal.querySelector('input[readonly]');
+            if (linkInput) {
+                linkInput.select();
+                document.execCommand('copy');
+                this.showToast('Copied!', 'Referral link copied to clipboard', 'success');
+            }
+        });
+    }
+
+    showEdgeContextMenu(edgeId, position) {
+        // Create a context menu for the edge
+        const contextMenu = document.createElement('div');
+        contextMenu.id = 'edge-context-menu';
+        contextMenu.className = 'absolute bg-white rounded-md shadow-lg z-20 py-1 w-36';
+        contextMenu.style.left = `${position.x}px`;
+        contextMenu.style.top = `${position.y}px`;
+
+        contextMenu.innerHTML = `
+            <button class="w-full text-left px-4 py-2 text-sm text-danger hover:bg-gray-100">
+                <i class="fas fa-trash mr-2"></i> Delete Connection
+            </button>
+        `;
+
+        document.body.appendChild(contextMenu);
+
+        // Add event listener for the delete button
+        const deleteButton = contextMenu.querySelector('button');
+        deleteButton.addEventListener('click', () => {
+            this.confirmDeleteEdge(edgeId);
+            this.removeContextMenu();
+        });
+
+        // Remove the context menu when clicking outside
+        document.addEventListener('click', this.removeContextMenu);
+        document.addEventListener('contextmenu', this.removeContextMenu);
+    }
+
+    removeContextMenu = () => {
+        const menu = document.getElementById('edge-context-menu');
+        if (menu) {
+            menu.remove();
+            document.removeEventListener('click', this.removeContextMenu);
+            document.removeEventListener('contextmenu', this.removeContextMenu);
+        }
+    }
+
+    async confirmDeleteEdge(edgeId) {
+        const edge = this.edges.get(edgeId);
+        if (!edge) return;
+
+        const fromNode = this.nodes.get(edge.from);
+        const toNode = this.nodes.get(edge.to);
+
+        if (!fromNode || !toNode) return;
+
+        const confirmed = await this.showConfirmation(
+            'Delete Connection',
+            `Are you sure you want to delete the referral connection between ${fromNode.label} and ${toNode.label}?`,
+            'This action cannot be undone.'
+        );
+
+        if (confirmed) {
+            this.deleteEdge(edgeId);
+        }
+    }
+
+    async deleteEdge(edgeId) {
+        try {
+            this.showToast('Deleting Connection...', 'Please wait', 'info');
+
+            const response = await fetch(`${this.createUrl}/${edgeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': this.csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Remove the edge from the network
+                this.edges.remove(edgeId);
+
+                // Update the invitee node if needed
+                const edge = this.edges.get(edgeId);
+                if (edge) {
+                    const inviteeId = edge.to;
+
+                    // Check if this node is still an invitee in any other connection
+                    const isStillInvitee = this.edges.get({
+                        filter: e => e.to === inviteeId
+                    }).length > 0;
+
+                    if (!isStillInvitee) {
+                        // Update the node to be a root node again
+                        this.nodes.update({
+                            id: inviteeId,
+                            group: 'root',
+                            color: {
+                                background: '#5A55D2',
+                                border: '#ffffff'
+                            }
+                        });
+                    }
+                }
+
+                this.showToast('Success!', 'Referral connection deleted successfully', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to delete connection');
+            }
+        } catch (error) {
+            console.error('Error deleting connection:', error);
+            this.showToast('Error', error.message || 'Failed to delete referral connection', 'error');
+        }
+    }
+
+    showConfirmation(title, message, description = '') {
+        return new Promise((resolve) => {
+            const modal = this.createModal(`
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-danger text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-text-primary mb-2">${title}</h3>
+                    <p class="text-text-secondary mb-2">${message}</p>
+                    ${description ? `<p class="text-text-secondary text-sm mb-4">${description}</p>` : ''}
+                    
+                    <div class="flex justify-center space-x-3 mt-6">
+                        <button id="cancelConfirmation" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded">
+                            Cancel
+                        </button>
+                        <button id="confirmAction" class="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded">
+                            <i class="fas fa-trash mr-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            `);
+
+            document.getElementById('cancelConfirmation')?.addEventListener('click', () => {
+                this.closeModal(modal);
+                resolve(false);
+            });
+
+            document.getElementById('confirmAction')?.addEventListener('click', () => {
+                this.closeModal(modal);
+                resolve(true);
+            });
         });
     }
 
@@ -623,13 +914,22 @@ class InteractiveReferralNetwork {
                     <div class="font-semibold">${title}</div>
                     ${message ? `<div class="text-sm opacity-90">${message}</div>` : ''}
                 </div>
+                <button class="ml-6 text-white/80 hover:text-white" id="closeToast">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         `;
 
         document.body.appendChild(toast);
 
-        if (type === 'success' || type === 'error') {
-            setTimeout(() => this.hideToast(), 3000);
+        // Add close button functionality
+        document.getElementById('closeToast')?.addEventListener('click', () => {
+            this.hideToast();
+        });
+
+        // Auto-hide toast after 5 seconds
+        if (type === 'success' || type === 'error' || type === 'info') {
+            setTimeout(() => this.hideToast(), 5000);
         }
     }
 
@@ -641,14 +941,10 @@ class InteractiveReferralNetwork {
         }
     }
 
-    showTutorial() {
-        setTimeout(() => {
-            this.showToast(
-                'Interactive Network Ready!',
-                'Click "Add Connection" to create referral links between accounts',
-                'info'
-            );
-        }, 1000);
+    getProviderIcon(provider) {
+        if (!provider) return '/images/providers/default.png';
+
+        return `/images/providers/${provider.toLowerCase()}.png`;
     }
 
     setupEventListeners() {
@@ -675,17 +971,65 @@ class InteractiveReferralNetwork {
             `;
         }
     }
+
+    clearSelection() {
+        this.network.unselectAll();
+    }
 }
 
-// Initialize when DOM is ready
+// Initialize when DOM is ready with better error handling
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+
     const networkContainer = document.getElementById('interactive-network-visualization');
 
     if (networkContainer) {
+        console.log('Network container found:', networkContainer);
+
         const dataUrl = networkContainer.dataset.dataUrl;
         const createUrl = networkContainer.dataset.createUrl;
 
-        new InteractiveReferralNetwork('interactive-network-visualization', dataUrl, createUrl);
+        console.log('URLs:', { dataUrl, createUrl });
+
+        if (!dataUrl || !createUrl) {
+            console.error('Missing required data attributes on network container');
+
+            networkContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-red-500 mb-2">Configuration Error</h4>
+                        <p class="text-gray-600 mb-4">Missing required data attributes for network visualization.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        try {
+            // Create network with a slight delay to ensure DOM is fully ready
+            setTimeout(() => {
+                new InteractiveReferralNetwork('interactive-network-visualization', dataUrl, createUrl);
+            }, 200);
+        } catch (error) {
+            console.error('Error initializing network:', error);
+
+            networkContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-red-500 mb-2">Initialization Error</h4>
+                        <p class="text-gray-600 mb-4">${error.message}</p>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        console.warn('Network container not found with ID: interactive-network-visualization');
     }
 });
 

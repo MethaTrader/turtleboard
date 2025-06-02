@@ -54,7 +54,7 @@ class DashboardController extends Controller
             'Gmail' => EmailAccount::where('provider', 'Gmail')->count(),
             'Outlook' => EmailAccount::where('provider', 'Outlook')->count(),
             'Yahoo' => EmailAccount::where('provider', 'Yahoo')->count(),
-            'Rambler' => EmailAccount::where('provider', 'Rambler')->count(),
+            'iCloud' => EmailAccount::where('provider', 'iCloud')->count(),
         ];
 
         // Get real recent activities for the authenticated user

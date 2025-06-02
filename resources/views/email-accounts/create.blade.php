@@ -95,6 +95,7 @@
                                                 @if($provider == 'Gmail') fa-google
                                                 @elseif($provider == 'Outlook') fa-microsoft
                                                 @elseif($provider == 'Yahoo') fa-yahoo
+                                                @elseif($provider == 'iCloud') fa-brands fa-apple
                                                 @else fa-envelope
                                                 @endif"></i>
                                             </div>
@@ -104,7 +105,7 @@
                                                     @if($provider == 'Gmail') Google Mail Service
                                                     @elseif($provider == 'Outlook') Microsoft Email
                                                     @elseif($provider == 'Yahoo') Yahoo Mail
-                                                    @else Rambler Mail
+                                                    @else iCloud Mail
                                                     @endif
                                                 </div>
                                             </div>

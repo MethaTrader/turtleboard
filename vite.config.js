@@ -6,6 +6,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/referral-network.css',
                 'resources/js/app.js',
                 'resources/js/charts.js',
                 'resources/js/onboarding.js',

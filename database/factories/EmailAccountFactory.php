@@ -24,14 +24,14 @@ class EmailAccountFactory extends Factory
      */
     public function definition(): array
     {
-        $providers = ['Gmail', 'Outlook', 'Yahoo', 'Rambler'];
+        $providers = ['Gmail', 'Outlook', 'Yahoo', 'iCloud'];
         $provider = $this->faker->randomElement($providers);
 
         $domains = [
             'Gmail' => 'gmail.com',
             'Outlook' => 'outlook.com',
             'Yahoo' => 'yahoo.com',
-            'Rambler' => 'rambler.ru',
+            'iCloud' => 'icloud.com',
         ];
 
         // Add more randomness to ensure uniqueness
@@ -67,7 +67,7 @@ class EmailAccountFactory extends Factory
             'Gmail' => 'gmail.com',
             'Outlook' => 'outlook.com',
             'Yahoo' => 'yahoo.com',
-            'Rambler' => 'rambler.ru',
+            'iCloud' => 'icloud.com',
         ];
 
         // Add more randomness to ensure uniqueness

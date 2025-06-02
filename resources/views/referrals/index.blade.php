@@ -21,7 +21,7 @@
         </div>
 
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-card rounded-card shadow-card p-6 flex items-center">
                 <div class="rounded-full w-12 h-12 bg-secondary/10 flex items-center justify-center mr-4">
                     <i class="fas fa-users text-secondary text-xl"></i>
@@ -29,16 +29,6 @@
                 <div>
                     <p class="text-text-secondary text-sm">Total Connections</p>
                     <p class="text-2xl font-bold text-text-primary">{{ $stats['total'] }}</p>
-                </div>
-            </div>
-
-            <div class="bg-card rounded-card shadow-card p-6 flex items-center">
-                <div class="rounded-full w-12 h-12 bg-warning/10 flex items-center justify-center mr-4">
-                    <i class="fas fa-clock text-warning text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-text-secondary text-sm">Pending</p>
-                    <p class="text-2xl font-bold text-warning">{{ $stats['pending'] }}</p>
                 </div>
             </div>
 
@@ -53,12 +43,45 @@
             </div>
 
             <div class="bg-card rounded-card shadow-card p-6 flex items-center">
-                <div class="rounded-full w-12 h-12 bg-primary/10 flex items-center justify-center mr-4">
-                    <i class="fas fa-percentage text-primary text-xl"></i>
+                <div class="rounded-full w-12 h-12 bg-warning/10 flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-warning text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-text-secondary text-sm">Success Rate</p>
-                    <p class="text-2xl font-bold text-primary">{{ $stats['completion_rate'] }}%</p>
+                    <p class="text-text-secondary text-sm">Pending</p>
+                    <p class="text-2xl font-bold text-warning">{{ $stats['pending'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promotion Period Selector -->
+        <div class="bg-card rounded-card shadow-card p-4">
+            <div class="flex items-center space-x-4">
+                <div class="font-medium text-text-primary">Promotion Period:</div>
+                <div class="flex space-x-2">
+                    @php
+                        $currentMonth = date('Y-m');
+                        $periods = [];
+
+                        // Generate periods for the last 3 months (6 half-month periods)
+                        for ($i = 0; $i < 3; $i++) {
+                            $month = date('Y-m', strtotime("-$i months"));
+                            $periods[] = [
+                                'value' => $month . '-01',
+                                'label' => date('F Y', strtotime($month)) . ' (1st Half)'
+                            ];
+                            $periods[] = [
+                                'value' => $month . '-16',
+                                'label' => date('F Y', strtotime($month)) . ' (2nd Half)'
+                            ];
+                        }
+                    @endphp
+
+                    <select id="promotion-period" class="rounded-md border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20 text-sm">
+                        <option value="all">All Periods</option>
+                        @foreach($periods as $period)
+                            <option value="{{ $period['value'] }}">{{ $period['label'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
         </div>
@@ -106,15 +129,15 @@
                 <div class="flex flex-wrap items-center justify-center gap-6 text-sm">
                     <div class="flex items-center">
                         <div class="w-3 h-3 rounded-full mr-2" style="background-color: #F59E0B;"></div>
-                        <span class="text-text-secondary">Pending Connection</span>
+                        <span class="text-text-secondary">Pending</span>
                     </div>
                     <div class="flex items-center">
                         <div class="w-3 h-3 rounded-full mr-2" style="background-color: #00DEA3;"></div>
-                        <span class="text-text-secondary">Completed Connection</span>
+                        <span class="text-text-secondary">Completed</span>
                     </div>
                     <div class="flex items-center">
                         <div class="w-3 h-3 rounded-full mr-2" style="background-color: #F56565;"></div>
-                        <span class="text-text-secondary">Cancelled Connection</span>
+                        <span class="text-text-secondary">Cancelled</span>
                     </div>
                 </div>
             </div>
@@ -134,7 +157,17 @@
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center">
                                 <div class="w-8 h-8 rounded-full {{ $isInvited ? 'bg-success/10 text-success' : 'bg-secondary/10 text-secondary' }} flex items-center justify-center mr-3">
-                                    <i class="fas fa-user text-sm"></i>
+                                    @php
+                                        $provider = strtolower($account->emailAccount->provider);
+                                        $icon = match($provider) {
+                                            'gmail' => '<i class="fab fa-google text-sm"></i>',
+                                            'outlook' => '<i class="fab fa-microsoft text-sm"></i>',
+                                            'yahoo' => '<i class="fab fa-yahoo text-sm"></i>',
+                                            'iCloud' => '<i class="fa-brands fa-apple text-sm"></i>',
+                                            default => '<i class="fas fa-user text-sm"></i>',
+                                        };
+                                    @endphp
+                                    {!! $icon !!}
                                 </div>
                                 <div>
                                     <p class="font-medium text-text-primary text-sm">{{ $account->emailAccount->email_address }}</p>
@@ -192,6 +225,16 @@
                     <div>
                         <h4 class="font-semibold text-text-primary mb-2">Navigate the Network</h4>
                         <p class="text-text-secondary">Drag to move around, scroll to zoom in/out, and use the control panel to reset view or freeze the layout.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mr-4 mt-1">
+                        <span class="text-sm font-bold">4</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-text-primary mb-2">Delete Connections</h4>
+                        <p class="text-text-secondary">Right-click on any connection line to open a context menu with the option to delete the connection.</p>
                     </div>
                 </div>
 
@@ -258,6 +301,24 @@
                     helpModal.classList.add('hidden');
                 }
             });
+
+            // Promotion period filter
+            const periodSelector = document.getElementById('promotion-period');
+            if (periodSelector) {
+                periodSelector.addEventListener('change', function() {
+                    const period = this.value;
+                    const networkContainer = document.getElementById('interactive-network-visualization');
+
+                    if (networkContainer && window.referralNetwork) {
+                        // Build the filtered URL
+                        let baseUrl = networkContainer.dataset.dataUrl;
+                        let url = period === 'all' ? baseUrl : `${baseUrl}?period=${period}`;
+
+                        // Reload network data with filter
+                        window.referralNetwork.loadData(url);
+                    }
+                });
+            }
         });
     </script>
 @endpush

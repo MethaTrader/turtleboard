@@ -77,6 +77,12 @@ class ReferralRequest extends FormRequest
                 'sometimes',
                 Rule::in([MexcReferral::STATUS_PENDING, MexcReferral::STATUS_COMPLETED, MexcReferral::STATUS_CANCELLED])
             ],
+            'referral_link' => [
+                'nullable',
+                'string',
+                'url',
+                'max:255',
+            ],
         ];
 
         return $rules;
@@ -97,6 +103,8 @@ class ReferralRequest extends FormRequest
             'invitee_account_id.exists' => 'The selected invitee account does not exist.',
             'invitee_account_id.different' => 'The inviter and invitee accounts must be different.',
             'status.in' => 'Please select a valid status.',
+            'referral_link.url' => 'The referral link must be a valid URL.',
+            'referral_link.max' => 'The referral link may not be greater than 255 characters.',
         ];
     }
 

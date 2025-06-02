@@ -23,7 +23,7 @@ class EmailAccountsTableSeeder extends Seeder
         }
 
         // Create email accounts for each provider
-        foreach (['Gmail', 'Outlook', 'Yahoo', 'Rambler'] as $provider) {
+        foreach (['Gmail', 'Outlook', 'Yahoo', 'iCloud'] as $provider) {
             // Create 5 accounts for each provider
             for ($i = 0; $i < 5; $i++) {
                 try {

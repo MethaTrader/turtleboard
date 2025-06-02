@@ -37,7 +37,7 @@ export class NetworkConfig {
                 border: '#ffffff',
                 background: 'rgba(0,0,0,0)',
                 highlight: {
-                    border: '#00DEA3',
+                    border: '#4300de',
                     background: 'rgba(0,222,163,0.1)'
                 },
                 hover: {
@@ -47,7 +47,7 @@ export class NetworkConfig {
             },
             chosen: {
                 node: (values, id, selected, hovering) => {
-                    values.borderColor = selected ? '#00DEA3' : (hovering ? '#7A76E6' : '#ffffff');
+                    values.borderColor = selected ? '#4600de' : (hovering ? '#7A76E6' : '#ffffff');
                     values.borderWidth = selected ? 5 : (hovering ? 4 : 3);
                 }
             }
@@ -190,7 +190,7 @@ export class NetworkConfig {
                 },
                 invitee: {
                     color: {
-                        background: '#00DEA3',
+                        background: '#5A55D2',
                         border: '#ffffff'
                     },
                     size: 35

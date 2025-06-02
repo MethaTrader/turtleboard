@@ -103,6 +103,9 @@ class InteractiveReferralNetwork {
                 return;
             }
 
+            // Set current period in node manager before initialization
+            this.nodeManager.setCurrentPeriod(period || 'all');
+
             // Initialize data managers
             this.nodeManager.initializeNodes(data.nodes);
             this.edgeManager.initializeEdges(data.edges);
@@ -121,8 +124,22 @@ class InteractiveReferralNetwork {
         // Clear container
         this.container.innerHTML = '';
 
-        // Get network configuration
+        // Get network configuration with purple color scheme
         const options = NetworkConfig.getNetworkOptions();
+
+        // Update node colors to use purple theme
+        options.nodes.color = {
+            border: '#5A55D2', // Secondary purple
+            background: 'rgba(0,0,0,0)',
+            highlight: {
+                border: '#4338CA', // Darker purple
+                background: 'rgba(90,85,210,0.1)'
+            },
+            hover: {
+                border: '#6366F1', // Medium purple
+                background: 'rgba(99,102,241,0.1)'
+            }
+        };
 
         // Get data from managers
         const nodes = this.nodeManager.getDataSet();
@@ -130,6 +147,9 @@ class InteractiveReferralNetwork {
 
         // Create network
         this.network = new Network(this.container, { nodes, edges }, options);
+
+        // Set network reference in node manager for tooltip management
+        this.nodeManager.setNetwork(this.network);
 
         // Store network reference globally for debugging
         window.referralNetwork = this;
@@ -145,6 +165,31 @@ class InteractiveReferralNetwork {
         // Show tutorial after stabilization
         this.network.once('stabilizationIterationsDone', () => {
             this.showTutorial();
+        });
+
+        // Handle tooltip cleanup on network interactions
+        this.setupTooltipCleanup();
+    }
+
+    /**
+     * Setup tooltip cleanup handlers
+     */
+    setupTooltipCleanup() {
+        if (!this.network) return;
+
+        // Clean up tooltips on canvas clicks
+        this.network.on('click', () => {
+            this.nodeManager.hideTooltip();
+        });
+
+        // Clean up tooltips on drag start
+        this.network.on('dragStart', () => {
+            this.nodeManager.hideTooltip();
+        });
+
+        // Clean up tooltips on zoom
+        this.network.on('zoom', () => {
+            this.nodeManager.hideTooltip();
         });
     }
 
@@ -190,6 +235,9 @@ class InteractiveReferralNetwork {
             const edges = this.edgeManager.getDataSet();
             this.network.setData({ nodes, edges });
 
+            // Ensure network reference is set
+            this.nodeManager.setNetwork(this.network);
+
             this.uiComponents.hideToast();
             this.uiComponents.showToast('Success!', 'Network data refreshed', 'success');
 
@@ -213,6 +261,9 @@ class InteractiveReferralNetwork {
                 nodes: this.nodeManager.getDataSet(),
                 edges: this.edgeManager.getDataSet()
             });
+
+            // Ensure network reference is set
+            this.nodeManager.setNetwork(this.network);
 
         } catch (error) {
             this.uiComponents.showToast('Error', `Failed to filter by period: ${error.message}`, 'error');
@@ -271,6 +322,9 @@ class InteractiveReferralNetwork {
     destroy() {
         // Cleanup event listeners
         this.eventManager.cleanup();
+
+        // Hide any tooltips
+        this.nodeManager.hideTooltip();
 
         // Destroy network
         if (this.network) {

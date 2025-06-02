@@ -33,8 +33,21 @@
           (Route::is('accounts.email') ? 'email-accounts' :
           (Route::is('accounts.proxy') ? 'proxies' :
           (Route::is('accounts.web3') ? 'web3-wallets' :
-          'dashboard'))))
-      }}">
+          (Route::is('referrals.*') ? 'referrals' :
+          'dashboard')))))
+      }}"
+      x-data="{
+          sidebarOpen: false,
+          activeMenu: '{{
+              Route::is('dashboard') ? 'dashboard' :
+              (Route::is('accounts.mexc*') ? 'mexc' :
+              (Route::is('accounts.email*') ? 'email' :
+              (Route::is('accounts.proxy*') ? 'proxy' :
+              (Route::is('accounts.web3*') ? 'web3' :
+              (Route::is('referrals*') ? 'referrals' :
+              'dashboard')))))
+          }}'
+      }">
 <div class="min-h-screen bg-background">
 
     <!-- Include Sidebar Component -->
@@ -47,7 +60,8 @@
             <div class="flex justify-between items-center">
                 <!-- Toggle Button & Welcome -->
                 <div class="flex items-center">
-                    <button id="sidebar-toggle" class="mr-4 text-text-secondary focus:outline-none lg:hidden">
+                    <button @click="sidebarOpen = !sidebarOpen"
+                            class="mr-4 text-text-secondary focus:outline-none lg:hidden">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                     <div>
@@ -138,19 +152,13 @@
 @stack('scripts')
 
 <script>
-    // Mobile sidebar toggle functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', function() {
-                // Simple toggle for mobile sidebar
-                const sidebar = document.querySelector('[x-data*="sidebarOpen"]');
-                if (sidebar && window.Alpine) {
-                    window.Alpine.evaluate(sidebar, 'sidebarOpen = !sidebarOpen');
-                }
-            });
-        }
+    // Make sure Alpine is loaded before running this code
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine.js initialized');
+    });
 
+    // Mobile sidebar toggle functionality (backup for when Alpine isn't ready)
+    document.addEventListener('DOMContentLoaded', function() {
         // Add event listener for the tour button in menu
         const tourMenuButton = document.getElementById('start-tour-menu');
         if (tourMenuButton) {
@@ -160,6 +168,18 @@
                     window.initTour();
                 } else {
                     // Fallback if the function isn't directly accessible
+                    document.dispatchEvent(new CustomEvent('start-tour'));
+                }
+            });
+        }
+
+        // Add event listener for start tour button
+        const startTourButton = document.getElementById('start-tour-button');
+        if (startTourButton) {
+            startTourButton.addEventListener('click', function() {
+                if (typeof window.initTour === 'function') {
+                    window.initTour();
+                } else {
                     document.dispatchEvent(new CustomEvent('start-tour'));
                 }
             });

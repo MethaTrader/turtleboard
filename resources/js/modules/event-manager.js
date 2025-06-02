@@ -28,6 +28,9 @@ export class EventManager {
         this.uiComponents = dependencies.uiComponents;
         this.dataService = dependencies.dataService;
 
+        // Set network reference in node manager for tooltip management
+        this.nodeManager.setNetwork(this.network);
+
         this.setupNetworkEvents();
         this.setupControlPanelEvents();
         this.setupGlobalEvents();
@@ -133,6 +136,9 @@ export class EventManager {
      * @param {Object} params
      */
     handleNetworkClick(params) {
+        // Hide any visible tooltips when clicking anywhere
+        this.nodeManager.hideTooltip();
+
         if (params.nodes.length > 0) {
             this.handleNodeClick(params.nodes[0]);
         } else if (params.edges.length > 0) {
@@ -147,6 +153,9 @@ export class EventManager {
      * @param {number} nodeId
      */
     handleNodeClick(nodeId) {
+        // Always hide tooltip when clicking on a node
+        this.nodeManager.hideTooltip();
+
         if (this.isConnectionMode) {
             this.handleConnectionModeClick(nodeId);
         }
@@ -167,6 +176,9 @@ export class EventManager {
      * @param {Object} params
      */
     handleDoubleClick(params) {
+        // Hide tooltip before showing modal
+        this.nodeManager.hideTooltip();
+
         if (params.nodes.length > 0) {
             this.showNodeDetails(params.nodes[0]);
         }
@@ -178,6 +190,9 @@ export class EventManager {
      */
     handleContextMenu(params) {
         params.event.preventDefault();
+
+        // Hide tooltip before showing context menu
+        this.nodeManager.hideTooltip();
 
         if (params.edges.length > 0) {
             this.showEdgeContextMenu(params.edges[0]);
@@ -204,6 +219,11 @@ export class EventManager {
         if (!this.isConnectionMode) {
             this.edgeManager.clearHighlights();
         }
+
+        // Hide tooltip when mouse leaves node
+        setTimeout(() => {
+            this.nodeManager.hideTooltip();
+        }, 100);
     }
 
     /**
@@ -211,7 +231,8 @@ export class EventManager {
      * @param {Object} params
      */
     handleNodeSelection(params) {
-        // Additional logic for node selection if needed
+        // Hide tooltip when node is selected
+        this.nodeManager.hideTooltip();
     }
 
     /**
@@ -257,6 +278,7 @@ export class EventManager {
     handleKeyboardShortcuts(e) {
         // Escape key to exit connection mode or close modals
         if (e.key === 'Escape') {
+            this.nodeManager.hideTooltip();
             if (this.isConnectionMode) {
                 this.exitConnectionMode();
             }
@@ -289,7 +311,11 @@ export class EventManager {
         try {
             this.uiComponents.showToast('Loading...', 'Filtering data by period', 'info');
 
-            const data = await this.dataService.loadNetworkData(period);
+            // Set current period in node manager
+            this.nodeManager.setCurrentPeriod(period === 'all' ? 'all' : period);
+
+            // Load filtered data
+            const data = await this.dataService.loadNetworkData(period === 'all' ? null : period);
 
             // Clear existing data
             this.nodeManager.clear();
@@ -328,6 +354,7 @@ export class EventManager {
         this.isConnectionMode = true;
         this.nodeManager.clearHighlights();
         this.nodeManager.highlightConnectableNodes();
+        this.nodeManager.hideTooltip();
 
         const button = document.getElementById('addConnectionMode');
         if (button) {
@@ -365,7 +392,14 @@ export class EventManager {
      */
     async handleConnectionModeClick(nodeId) {
         const success = this.nodeManager.selectNodeForConnection(nodeId);
-        if (!success) return;
+        if (!success) {
+            // Show error if trying to select node outside current period
+            const node = this.nodeManager.getNode(nodeId);
+            if (node && !node.data?.inCurrentPeriod && this.nodeManager.currentPeriod !== 'all') {
+                this.uiComponents.showToast('Invalid Selection', 'You can only connect accounts from the current period', 'error');
+            }
+            return;
+        }
 
         const selectedNodes = this.nodeManager.getSelectedNodes();
 
@@ -556,6 +590,7 @@ export class EventManager {
         }
 
         this.edgeManager.clearHighlights();
+        this.nodeManager.hideTooltip();
     }
 
     /**

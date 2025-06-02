@@ -22,15 +22,24 @@ export class UIComponents {
 
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        modal.style.animation = 'fadeIn 0.3s ease-out';
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease-out';
 
         const modalContent = document.createElement('div');
-        modalContent.className = `bg-white rounded-lg p-6 max-w-md w-full mx-4 ${options.size || ''}`;
-        modalContent.style.animation = 'slideIn 0.3s ease-out';
+        modalContent.className = `bg-white rounded-lg p-6 max-w-md w-full mx-4 transform transition-all duration-300 ease-out ${options.size || ''}`;
+        modalContent.style.opacity = '0';
+        modalContent.style.transform = 'scale(0.95) translateY(-10px)';
         modalContent.innerHTML = content;
 
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
+
+        // Smooth animation in
+        requestAnimationFrame(() => {
+            modal.style.opacity = '1';
+            modalContent.style.opacity = '1';
+            modalContent.style.transform = 'scale(1) translateY(0)';
+        });
 
         // Close on outside click
         modal.addEventListener('click', (e) => {
@@ -57,9 +66,17 @@ export class UIComponents {
      */
     closeModal() {
         if (this.activeModal && this.activeModal.parentNode) {
-            this.activeModal.style.animation = 'fadeOut 0.3s ease-out';
+            const modalContent = this.activeModal.querySelector('div > div');
+
+            // Smooth animation out
+            this.activeModal.style.opacity = '0';
+            if (modalContent) {
+                modalContent.style.opacity = '0';
+                modalContent.style.transform = 'scale(0.95) translateY(-10px)';
+            }
+
             setTimeout(() => {
-                if (this.activeModal.parentNode) {
+                if (this.activeModal && this.activeModal.parentNode) {
                     this.activeModal.parentNode.removeChild(this.activeModal);
                 }
                 this.activeModal = null;
@@ -93,23 +110,22 @@ export class UIComponents {
 
         const toast = document.createElement('div');
         toast.id = 'networkToast';
-        toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${colors[type]} px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300`;
+        toast.className = `fixed z-50 top-4 left-1/2 transform ${colors[type]} px-6 py-3 rounded-lg shadow-lg z-[9999] transition-all duration-300 max-w-lg w-full mx-4`;
         toast.style.opacity = '0';
-        toast.style.transform = 'translate(-50%, -20px)';
 
         const closeButton = `
-            <button onclick="this.parentElement.style.opacity='0'; setTimeout(() => this.parentElement.remove(), 300)" 
-                    class="ml-4 text-white hover:text-gray-200 transition-colors">
+            <button onclick="window.uiComponents?.hideToast()" 
+                    class="ml-4 text-white hover:text-gray-200 transition-colors flex-shrink-0">
                 <i class="fas fa-times"></i>
             </button>
         `;
 
         toast.innerHTML = `
             <div class="flex items-center">
-                <i class="${icons[type]} mr-3"></i>
-                <div class="flex-1">
-                    <div class="font-semibold">${title}</div>
-                    ${message ? `<div class="text-sm opacity-90">${message}</div>` : ''}
+                <i class="${icons[type]} mr-3 flex-shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <div class="font-semibold truncate">${title}</div>
+                    ${message ? `<div class="text-sm opacity-90 break-words">${message}</div>` : ''}
                 </div>
                 ${closeButton}
             </div>
@@ -117,11 +133,13 @@ export class UIComponents {
 
         document.body.appendChild(toast);
 
+        // Store reference globally for close button
+        window.uiComponents = this;
+
         // Animate in
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             toast.style.opacity = '1';
-            toast.style.transform = 'translate(-50%, 0)';
-        }, 10);
+        });
 
         this.activeToast = toast;
 
@@ -158,6 +176,7 @@ export class UIComponents {
      */
     showConnectionConfirmation(inviterEmail, inviteeEmail) {
         return new Promise((resolve) => {
+            const modalId = `modal-${Date.now()}`;
             const content = `
                 <div class="text-center">
                     <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -169,19 +188,19 @@ export class UIComponents {
                     </p>
                     
                     <div class="mb-6 text-left">
-                        <label for="referralLink" class="block text-sm font-medium text-text-secondary mb-2">
+                        <label for="referralLink-${modalId}" class="block text-sm font-medium text-text-secondary mb-2">
                             Referral Link (Optional)
                         </label>
-                        <input type="url" id="referralLink" placeholder="https://example.com/ref/..."
+                        <input type="url" id="referralLink-${modalId}" placeholder="https://example.com/ref/..."
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-secondary focus:ring focus:ring-secondary/20">
                         <p class="text-xs text-text-secondary mt-1">This link will be visible when viewing account details</p>
                     </div>
                     
                     <div class="flex justify-center space-x-3">
-                        <button id="cancelConnection" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded transition-colors">
+                        <button id="cancelConnection-${modalId}" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded transition-colors">
                             Cancel
                         </button>
-                        <button id="confirmConnection" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded transition-colors">
+                        <button id="confirmConnection-${modalId}" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded transition-colors">
                             <i class="fas fa-check mr-2"></i>Create Connection
                         </button>
                     </div>
@@ -190,16 +209,24 @@ export class UIComponents {
 
             const modal = this.createModal(content, { size: 'max-w-lg' });
 
-            modal.querySelector('#cancelConnection')?.addEventListener('click', () => {
-                this.closeModal();
-                resolve({ confirmed: false, referralLink: null });
-            });
+            const cancelBtn = document.getElementById(`cancelConnection-${modalId}`);
+            const confirmBtn = document.getElementById(`confirmConnection-${modalId}`);
+            const referralInput = document.getElementById(`referralLink-${modalId}`);
 
-            modal.querySelector('#confirmConnection')?.addEventListener('click', () => {
-                const referralLink = modal.querySelector('#referralLink').value || null;
-                this.closeModal();
-                resolve({ confirmed: true, referralLink });
-            });
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    this.closeModal();
+                    resolve({ confirmed: false, referralLink: null });
+                });
+            }
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    const referralLink = referralInput?.value || null;
+                    this.closeModal();
+                    resolve({ confirmed: true, referralLink });
+                });
+            }
         });
     }
 
@@ -211,6 +238,7 @@ export class UIComponents {
      */
     showDeleteConfirmation(fromEmail, toEmail) {
         return new Promise((resolve) => {
+            const modalId = `modal-${Date.now()}`;
             const content = `
                 <div class="text-center">
                     <div class="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -224,10 +252,10 @@ export class UIComponents {
                     <p class="text-sm text-text-secondary mb-6">This action cannot be undone.</p>
                     
                     <div class="flex justify-center space-x-3">
-                        <button id="cancelDelete" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded transition-colors">
+                        <button id="cancelDelete-${modalId}" class="bg-gray-200 hover:bg-gray-300 text-text-primary px-4 py-2 rounded transition-colors">
                             Cancel
                         </button>
-                        <button id="confirmDelete" class="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded transition-colors">
+                        <button id="confirmDelete-${modalId}" class="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded transition-colors">
                             <i class="fas fa-trash mr-2"></i>Delete Connection
                         </button>
                     </div>
@@ -236,15 +264,22 @@ export class UIComponents {
 
             const modal = this.createModal(content);
 
-            modal.querySelector('#cancelDelete')?.addEventListener('click', () => {
-                this.closeModal();
-                resolve(false);
-            });
+            const cancelBtn = document.getElementById(`cancelDelete-${modalId}`);
+            const confirmBtn = document.getElementById(`confirmDelete-${modalId}`);
 
-            modal.querySelector('#confirmDelete')?.addEventListener('click', () => {
-                this.closeModal();
-                resolve(true);
-            });
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    this.closeModal();
+                    resolve(false);
+                });
+            }
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    this.closeModal();
+                    resolve(true);
+                });
+            }
         });
     }
 
@@ -255,6 +290,7 @@ export class UIComponents {
      * @param {Array} receivedInvitation
      */
     showNodeDetails(nodeData, sentInvitations = [], receivedInvitation = []) {
+        const modalId = `modal-${Date.now()}`;
         const isInvited = receivedInvitation.length > 0;
         let referralLinkHtml = '';
 
@@ -314,14 +350,20 @@ export class UIComponents {
                 
                 ${referralLinkHtml}
                 
-                <button onclick="this.closest('.fixed').querySelector('button').click()" 
-                        class="mt-6 bg-secondary hover:bg-secondary/90 text-white px-6 py-2 rounded transition-colors">
+                <button id="closeNodeDetails-${modalId}" class="mt-6 bg-secondary hover:bg-secondary/90 text-white px-6 py-2 rounded transition-colors">
                     Close
                 </button>
             </div>
         `;
 
-        this.createModal(content, { size: 'max-w-lg' });
+        const modal = this.createModal(content, { size: 'max-w-lg' });
+
+        const closeBtn = document.getElementById(`closeNodeDetails-${modalId}`);
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeModal();
+            });
+        }
     }
 
     /**

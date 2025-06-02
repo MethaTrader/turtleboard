@@ -11,6 +11,25 @@ export class NodeManager {
         this.nodes = null;
         this.selectedNodes = [];
         this.highlightedNodes = [];
+        this.currentPeriod = 'all';
+        this.network = null;
+    }
+
+    /**
+     * Set network reference for tooltip management
+     * @param {Network} network
+     */
+    setNetwork(network) {
+        this.network = network;
+    }
+
+    /**
+     * Set current period for filtering
+     * @param {string} period
+     */
+    setCurrentPeriod(period) {
+        this.currentPeriod = period;
+        this.updateNodesForPeriod();
     }
 
     /**
@@ -32,6 +51,7 @@ export class NodeManager {
     processNode(node) {
         const isInvited = node.group === 'invitee';
         const providerIcon = NetworkUtils.getProviderIcon(node.data?.provider);
+        const isInCurrentPeriod = this.isNodeInCurrentPeriod(node);
 
         return {
             id: node.id,
@@ -44,35 +64,37 @@ export class NodeManager {
             borderWidthSelected: 5,
             group: node.group,
             color: {
-                border: '#ffffff',
+                border: '#5A55D2', // Secondary purple color
                 background: 'rgba(0,0,0,0)',
                 highlight: {
-                    border: isInvited ? '#00DEA3' : '#5A55D2',
-                    background: 'rgba(0,0,0,0.1)'
+                    border: isInvited ? '#4F46E5' : '#4338CA', // Darker purple shades
+                    background: 'rgba(90,85,210,0.1)'
                 },
                 hover: {
-                    border: '#7A76E6',
-                    background: 'rgba(122,118,230,0.1)'
+                    border: '#6366F1', // Medium purple shade
+                    background: 'rgba(99,102,241,0.1)'
                 }
             },
             font: {
                 size: 12,
-                color: '#2D3748',
+                color: isInCurrentPeriod ? '#2D3748' : '#9CA3AF',
                 face: 'Poppins',
-                background: 'rgba(255,255,255,0.8)',
+                background: isInCurrentPeriod ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.5)',
                 strokeWidth: 1,
                 strokeColor: '#ffffff'
             },
             shadow: {
-                enabled: true,
+                enabled: isInCurrentPeriod,
                 color: 'rgba(0,0,0,0.15)',
                 size: 8,
                 x: 2,
                 y: 2
             },
+            opacity: isInCurrentPeriod ? 1 : 0.4,
             data: {
                 ...node.data,
-                originalSize: this.calculateNodeSize(node)
+                originalSize: this.calculateNodeSize(node),
+                inCurrentPeriod: isInCurrentPeriod
             },
             chosen: {
                 node: (values, id, selected, hovering) => {
@@ -80,6 +102,69 @@ export class NodeManager {
                 }
             }
         };
+    }
+
+    /**
+     * Check if node is in current period
+     * @param {Object} node
+     * @returns {boolean}
+     */
+    isNodeInCurrentPeriod(node) {
+        if (this.currentPeriod === 'all' || !this.currentPeriod) {
+            return true;
+        }
+
+        // Check if node was created within the period
+        const nodeDate = new Date(node.data?.created_at || node.created_at);
+        const periodDate = new Date(this.currentPeriod);
+
+        // For half-month periods, check if it's in the correct half
+        const periodDay = parseInt(this.currentPeriod.split('-')[2]);
+        const isSecondHalf = periodDay === 16;
+
+        const nodeMonth = nodeDate.getFullYear() + '-' + String(nodeDate.getMonth() + 1).padStart(2, '0');
+        const periodMonth = this.currentPeriod.substring(0, 7);
+
+        if (nodeMonth !== periodMonth) {
+            return false;
+        }
+
+        if (isSecondHalf) {
+            return nodeDate.getDate() >= 16;
+        } else {
+            return nodeDate.getDate() < 16;
+        }
+    }
+
+    /**
+     * Update nodes for current period
+     */
+    updateNodesForPeriod() {
+        if (!this.nodes) return;
+
+        const updates = [];
+        this.nodes.forEach(node => {
+            const isInCurrentPeriod = this.isNodeInCurrentPeriod(node);
+            updates.push({
+                id: node.id,
+                opacity: isInCurrentPeriod ? 1 : 0.4,
+                font: {
+                    ...node.font,
+                    color: isInCurrentPeriod ? '#2D3748' : '#9CA3AF',
+                    background: isInCurrentPeriod ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.5)'
+                },
+                shadow: {
+                    ...node.shadow,
+                    enabled: isInCurrentPeriod
+                },
+                data: {
+                    ...node.data,
+                    inCurrentPeriod: isInCurrentPeriod
+                }
+            });
+        });
+
+        this.nodes.update(updates);
     }
 
     /**
@@ -123,18 +208,40 @@ export class NodeManager {
      * @param {boolean} hovering
      */
     handleNodeSelection(values, id, selected, hovering) {
+        const node = this.nodes ? this.nodes.get(id) : null;
+        const isInCurrentPeriod = node?.data?.inCurrentPeriod !== false;
+
         if (selected) {
-            values.borderColor = '#00DEA3';
+            values.borderColor = '#4338CA'; // Dark purple for selection
             values.borderWidth = 5;
             values.size = values.size * 1.1;
-        } else if (hovering) {
-            values.borderColor = '#7A76E6';
+
+            // Hide tooltip when node is selected/clicked
+            this.hideTooltip();
+        } else if (hovering && isInCurrentPeriod) {
+            values.borderColor = '#6366F1'; // Medium purple for hover
             values.borderWidth = 4;
             values.size = values.size * 1.05;
         } else {
-            values.borderColor = '#ffffff';
+            values.borderColor = '#5A55D2'; // Default purple
             values.borderWidth = 3;
         }
+    }
+
+    /**
+     * Hide tooltip
+     */
+    hideTooltip() {
+        if (this.network && this.network.tooltip) {
+            this.network.tooltip.hide();
+        }
+
+        // Also hide any vis-tooltip elements
+        const tooltips = document.querySelectorAll('.vis-tooltip');
+        tooltips.forEach(tooltip => {
+            tooltip.style.visibility = 'hidden';
+            tooltip.style.opacity = '0';
+        });
     }
 
     /**
@@ -145,13 +252,14 @@ export class NodeManager {
 
         const updates = [];
         this.nodes.forEach(node => {
+            const isInCurrentPeriod = node.data?.inCurrentPeriod !== false;
             updates.push({
                 id: node.id,
                 borderWidth: 4,
-                borderColor: '#00DEA3',
+                borderColor: isInCurrentPeriod ? '#00DEA3' : '#9CA3AF', // Only highlight current period nodes
                 color: {
                     ...node.color,
-                    border: '#00DEA3'
+                    border: isInCurrentPeriod ? '#00DEA3' : '#9CA3AF'
                 }
             });
         });
@@ -173,10 +281,10 @@ export class NodeManager {
                 updates.push({
                     id: nodeId,
                     borderWidth: 3,
-                    borderColor: '#ffffff',
+                    borderColor: '#5A55D2', // Back to purple
                     color: {
                         ...node.color,
-                        border: '#ffffff'
+                        border: '#5A55D2'
                     }
                 });
             }
@@ -195,9 +303,17 @@ export class NodeManager {
             return false;
         }
 
+        const node = this.nodes.get(nodeId);
+        const isInCurrentPeriod = node?.data?.inCurrentPeriod !== false;
+
+        // Only allow selection of nodes in current period
+        if (!isInCurrentPeriod && this.currentPeriod !== 'all') {
+            return false;
+        }
+
         this.selectedNodes.push(nodeId);
 
-        // Highlight selected node
+        // Highlight selected node with orange color
         this.nodes.update({
             id: nodeId,
             borderColor: '#F59E0B',
@@ -206,6 +322,9 @@ export class NodeManager {
                 border: '#F59E0B'
             }
         });
+
+        // Hide tooltip when selecting nodes
+        this.hideTooltip();
 
         return true;
     }
@@ -223,14 +342,14 @@ export class NodeManager {
                 const isInvited = node.group === 'invitee';
                 this.nodes.update({
                     id: nodeId,
-                    borderColor: '#ffffff',
+                    borderColor: '#5A55D2', // Back to purple
                     borderWidth: 3,
                     color: {
-                        border: '#ffffff',
+                        border: '#5A55D2',
                         background: 'rgba(0,0,0,0)',
                         highlight: {
-                            border: isInvited ? '#00DEA3' : '#5A55D2',
-                            background: 'rgba(0,0,0,0.1)'
+                            border: isInvited ? '#4F46E5' : '#4338CA',
+                            background: 'rgba(90,85,210,0.1)'
                         }
                     }
                 });
@@ -302,21 +421,23 @@ export class NodeManager {
         if (!node) return;
 
         const isInvited = group === 'invitee';
+        const isInCurrentPeriod = node.data?.inCurrentPeriod !== false;
 
         this.updateNode(nodeId, {
             group: group,
             color: {
-                border: '#ffffff',
+                border: '#5A55D2', // Purple border
                 background: 'rgba(0,0,0,0)',
                 highlight: {
-                    border: isInvited ? '#00DEA3' : '#5A55D2',
-                    background: 'rgba(0,0,0,0.1)'
+                    border: isInvited ? '#4F46E5' : '#4338CA',
+                    background: 'rgba(90,85,210,0.1)'
                 },
                 hover: {
-                    border: '#7A76E6',
-                    background: 'rgba(122,118,230,0.1)'
+                    border: '#6366F1',
+                    background: 'rgba(99,102,241,0.1)'
                 }
-            }
+            },
+            opacity: isInCurrentPeriod ? 1 : 0.4
         });
     }
 

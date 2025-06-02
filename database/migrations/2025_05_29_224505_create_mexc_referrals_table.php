@@ -1,4 +1,5 @@
 <?php
+// database/migrations/2025_05_29_224505_create_mexc_referrals_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -15,14 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('inviter_account_id')->constrained('mexc_accounts')->onDelete('cascade');
             $table->foreignId('invitee_account_id')->constrained('mexc_accounts')->onDelete('cascade');
-            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
-            $table->boolean('inviter_rewarded')->default(false);
-            $table->boolean('invitee_rewarded')->default(false);
-            $table->decimal('deposit_amount', 10, 2)->nullable();
-            $table->timestamp('deposit_date')->nullable();
-            $table->timestamp('withdrawal_date')->nullable();
-            $table->string('promotion_period')->nullable();
-            $table->text('notes')->nullable();
+            $table->enum('status', ['pending', 'completed', 'cancelled'])->default('pending');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
@@ -30,10 +24,13 @@ return new class extends Migration
             // Ensure an invitee can only be invited once
             $table->unique('invitee_account_id');
 
+            // Ensure the same pair cannot have multiple referrals
+            $table->unique(['inviter_account_id', 'invitee_account_id']);
+
             // Add indexes for better performance
             $table->index('inviter_account_id');
             $table->index('status');
-            $table->index('promotion_period');
+            $table->index('created_at');
         });
     }
 

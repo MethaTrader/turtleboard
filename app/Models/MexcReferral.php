@@ -1,4 +1,5 @@
 <?php
+// app/Models/MexcReferral.php
 
 namespace App\Models;
 
@@ -21,13 +22,6 @@ class MexcReferral extends Model
         'inviter_account_id',
         'invitee_account_id',
         'status',
-        'inviter_rewarded',
-        'invitee_rewarded',
-        'deposit_amount',
-        'deposit_date',
-        'withdrawal_date',
-        'promotion_period',
-        'notes',
         'created_by',
     ];
 
@@ -37,12 +31,16 @@ class MexcReferral extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'inviter_rewarded' => 'boolean',
-        'invitee_rewarded' => 'boolean',
-        'deposit_amount' => 'decimal:2',
-        'deposit_date' => 'datetime',
-        'withdrawal_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
+
+    /**
+     * Status constants for referrals
+     */
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
 
     /**
      * Get the inviter MEXC account.
@@ -75,28 +73,6 @@ class MexcReferral extends Model
     }
 
     /**
-     * Scope a query to only include referrals for the first promotion of the month.
-     *
-     * @param  Builder  $query
-     * @return Builder
-     */
-    public function scopeFirstPromotion($query)
-    {
-        return $query->where('promotion_period', 'LIKE', '%-01-%');
-    }
-
-    /**
-     * Scope a query to only include referrals for the second promotion of the month.
-     *
-     * @param  Builder  $query
-     * @return Builder
-     */
-    public function scopeSecondPromotion($query)
-    {
-        return $query->where('promotion_period', 'LIKE', '%-16-%');
-    }
-
-    /**
      * Scope a query to only include referrals by status.
      *
      * @param  Builder  $query
@@ -121,23 +97,15 @@ class MexcReferral extends Model
     }
 
     /**
-     * Get the current promotion period.
+     * Scope a query to only include referrals for a specific invitee.
      *
-     * @return string
+     * @param  Builder  $query
+     * @param  int  $inviteeId
+     * @return Builder
      */
-    public static function getCurrentPromotionPeriod(): string
+    public function scopeByInvitee($query, $inviteeId)
     {
-        $now = now();
-        $year = $now->year;
-        $month = $now->format('m');
-
-        // First half of the month (1st to 15th)
-        if ($now->day <= 15) {
-            return "{$year}-{$month}-01";
-        }
-
-        // Second half of the month (16th to end)
-        return "{$year}-{$month}-16";
+        return $query->where('invitee_account_id', $inviteeId);
     }
 
     /**
@@ -153,21 +121,98 @@ class MexcReferral extends Model
     }
 
     /**
-     * Calculate total reward amount for a MEXC account (both as inviter and invitee).
+     * Check if an account is already invited by someone.
      *
      * @param int $accountId
-     * @return float
+     * @return bool
      */
-    public static function getTotalRewardAmount(int $accountId): float
+    public static function isAlreadyInvited(int $accountId): bool
     {
-        $asInviter = self::where('inviter_account_id', $accountId)
-                ->where('inviter_rewarded', true)
-                ->count() * 20; // $20 per successful invitation
+        return self::where('invitee_account_id', $accountId)->exists();
+    }
 
-        $asInvitee = self::where('invitee_account_id', $accountId)
-                ->where('invitee_rewarded', true)
-                ->count() * 20; // $20 per successful invitation
+    /**
+     * Get the color for this referral based on status.
+     *
+     * @return string
+     */
+    public function getStatusColor(): string
+    {
+        return match ($this->status) {
+            self::STATUS_COMPLETED => '#00DEA3',
+            self::STATUS_PENDING => '#F59E0B',
+            self::STATUS_CANCELLED => '#F56565',
+            default => '#6B7280',
+        };
+    }
 
-        return $asInviter + $asInvitee;
+    /**
+     * Get the status label in a human-readable format.
+     *
+     * @return string
+     */
+    public function getStatusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_COMPLETED => 'Completed',
+            self::STATUS_PENDING => 'Pending',
+            self::STATUS_CANCELLED => 'Cancelled',
+            default => 'Unknown',
+        };
+    }
+
+    /**
+     * Mark the referral as completed.
+     *
+     * @return bool
+     */
+    public function markAsCompleted(): bool
+    {
+        return $this->update(['status' => self::STATUS_COMPLETED]);
+    }
+
+    /**
+     * Mark the referral as cancelled.
+     *
+     * @return bool
+     */
+    public function markAsCancelled(): bool
+    {
+        return $this->update(['status' => self::STATUS_CANCELLED]);
+    }
+
+    /**
+     * Get statistics for all referrals.
+     *
+     * @return array
+     */
+    public static function getStatistics(): array
+    {
+        $total = self::count();
+        $pending = self::where('status', self::STATUS_PENDING)->count();
+        $completed = self::where('status', self::STATUS_COMPLETED)->count();
+        $cancelled = self::where('status', self::STATUS_CANCELLED)->count();
+
+        return [
+            'total' => $total,
+            'pending' => $pending,
+            'completed' => $completed,
+            'cancelled' => $cancelled,
+            'completion_rate' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
+        ];
+    }
+
+    /**
+     * Boot the model to set default values.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($referral) {
+            if (empty($referral->status)) {
+                $referral->status = self::STATUS_PENDING;
+            }
+        });
     }
 }

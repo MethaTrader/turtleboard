@@ -1,4 +1,5 @@
 <?php
+// routes/web.php
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccountController;
@@ -29,23 +30,6 @@ Route::get('/', function () {
 // Authentication routes
 require __DIR__.'/auth.php';
 
-// Referrals Management Routes
-Route::middleware(['account.manager'])->prefix('referrals')->name('referrals.')->group(function () {
-    Route::get('/', [ReferralController::class, 'index'])->name('index');
-    Route::get('/create', [ReferralController::class, 'create'])->name('create');
-    Route::post('/', [ReferralController::class, 'store'])->name('store');
-    Route::get('/{referral}/edit', [ReferralController::class, 'edit'])->name('edit');
-    Route::put('/{referral}', [ReferralController::class, 'update'])->name('update');
-    Route::delete('/{referral}', [ReferralController::class, 'destroy'])->name('destroy');
-
-    // AJAX endpoint for network visualization data
-    Route::get('/network-data', [ReferralController::class, 'networkData'])->name('network-data');
-
-    // Additional status management routes
-    Route::post('/{referral}/complete', [ReferralController::class, 'markAsCompleted'])->name('complete');
-    Route::post('/{referral}/fail', [ReferralController::class, 'markAsFailed'])->name('fail');
-});
-
 // Protected routes
 Route::middleware(['auth'])->group(function () {
     // Dashboard
@@ -62,6 +46,21 @@ Route::middleware(['auth'])->group(function () {
 
     // API endpoint for recent activities (AJAX)
     Route::get('/api/activities/recent', [ActivityController::class, 'recent'])->name('api.activities.recent');
+
+    // Interactive Referrals Management Routes
+    Route::middleware(['account.manager'])->prefix('referrals')->name('referrals.')->group(function () {
+        // Main interface
+        Route::get('/', [ReferralController::class, 'index'])->name('index');
+
+        // API endpoints for interactive network
+        Route::get('/network-data', [ReferralController::class, 'networkData'])->name('network-data');
+        Route::post('/', [ReferralController::class, 'store'])->name('store');
+        Route::patch('/{referral}/status', [ReferralController::class, 'updateStatus'])->name('update-status');
+        Route::delete('/{referral}', [ReferralController::class, 'destroy'])->name('destroy');
+
+        // Account details for network nodes
+        Route::get('/account/{account}', [ReferralController::class, 'accountDetails'])->name('account-details');
+    });
 
     // Account Management Routes - available to both admins and account managers
     Route::middleware(['account.manager'])->prefix('accounts')->name('accounts.')->group(function () {

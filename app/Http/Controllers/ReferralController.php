@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/ReferralController.php
 
 namespace App\Http\Controllers;
 
@@ -6,8 +7,11 @@ use App\Http\Requests\ReferralRequest;
 use App\Models\MexcAccount;
 use App\Models\MexcReferral;
 use App\Services\ActivityService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ReferralController extends Controller
@@ -20,114 +24,120 @@ class ReferralController extends Controller
     }
 
     /**
-     * Display the referrals dashboard and visualization.
+     * Display the interactive referrals network.
      *
      * @param Request $request
      * @return View
      */
     public function index(Request $request): View
     {
-        // Get referrals with pagination
-        $query = MexcReferral::with(['inviterAccount.emailAccount', 'inviteeAccount.emailAccount']);
-
-        // Filter by status if requested
-        if ($request->has('status') && $request->status) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by promotion period if requested
-        if ($request->has('promotion_period') && $request->promotion_period) {
-            $query->where('promotion_period', $request->promotion_period);
-        }
-
-        // Default sorting by newest first
-        $referrals = $query->orderBy('created_at', 'desc')->paginate(10);
-
         // Get statistics for the dashboard
-        $stats = [
-            'total' => MexcReferral::count(),
-            'pending' => MexcReferral::where('status', 'pending')->count(),
-            'completed' => MexcReferral::where('status', 'completed')->count(),
-            'failed' => MexcReferral::where('status', 'failed')->count(),
-            'total_rewards' => MexcReferral::where('status', 'completed')->count() * 40, // $40 per completed referral ($20 inviter + $20 invitee)
-        ];
+        $stats = MexcReferral::getStatistics();
 
-        // Get all MEXC accounts for the referral form
+        // Get all MEXC accounts for reference
         $mexcAccounts = MexcAccount::with('emailAccount')
             ->where('status', 'active')
             ->get();
-
-        // Get current promotion period
-        $currentPromotionPeriod = MexcReferral::getCurrentPromotionPeriod();
-
-        // Prepare promotion period options for filtering
-        $promotionPeriods = MexcReferral::select('promotion_period')
-            ->distinct()
-            ->orderBy('promotion_period', 'desc')
-            ->pluck('promotion_period')
-            ->toArray();
-
-        // Add current period if not in the list
-        if (!in_array($currentPromotionPeriod, $promotionPeriods)) {
-            $promotionPeriods[] = $currentPromotionPeriod;
-            sort($promotionPeriods);
-        }
 
         return view('referrals.index', [
-            'referrals' => $referrals,
             'stats' => $stats,
             'mexcAccounts' => $mexcAccounts,
-            'currentPromotionPeriod' => $currentPromotionPeriod,
-            'promotionPeriods' => $promotionPeriods,
-            'filters' => $request->only(['status', 'promotion_period']),
         ]);
     }
 
     /**
-     * Show the form for creating a new referral.
+     * Get the referral network data for visualization.
      *
-     * @return View
+     * @return JsonResponse
      */
-    public function create(): View
-    {
-        // Get active MEXC accounts for selection
-        $mexcAccounts = MexcAccount::with('emailAccount')
-            ->where('status', 'active')
-            ->get();
-
-        return view('referrals.create', [
-            'mexcAccounts' => $mexcAccounts,
-            'currentPromotionPeriod' => MexcReferral::getCurrentPromotionPeriod(),
-        ]);
-    }
-
-    /**
-     * Store a newly created referral.
-     *
-     * @param ReferralRequest $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(ReferralRequest $request)
+    public function networkData(): JsonResponse
     {
         try {
+            // Get all active MEXC accounts
+            $accounts = MexcAccount::with(['emailAccount', 'sentInvitations.inviteeAccount.emailAccount'])
+                ->where('status', 'active')
+                ->get();
+
+            $nodes = [];
+            $edges = [];
+
+            // Create nodes for all accounts
+            foreach ($accounts as $account) {
+                $isInvited = MexcReferral::where('invitee_account_id', $account->id)->exists();
+                $sentInvitationsCount = $account->sentInvitations->count();
+                $remainingSlots = 5 - $sentInvitationsCount;
+
+                $nodes[] = [
+                    'id' => $account->id,
+                    'label' => $account->emailAccount->email_address,
+                    'group' => $isInvited ? 'invitee' : 'root',
+                    'title' => $this->generateNodeTooltip($account, $sentInvitationsCount, $remainingSlots),
+                    'value' => max(15, min(35, 15 + ($sentInvitationsCount * 4))), // Node size based on activity
+                    'data' => [
+                        'email' => $account->emailAccount->email_address,
+                        'sentInvitations' => $sentInvitationsCount,
+                        'remainingSlots' => $remainingSlots,
+                        'isInvited' => $isInvited,
+                    ]
+                ];
+            }
+
+            // Create edges for invitations
+            $referrals = MexcReferral::with(['inviterAccount', 'inviteeAccount'])->get();
+            foreach ($referrals as $referral) {
+                $edges[] = [
+                    'id' => $referral->id,
+                    'from' => $referral->inviter_account_id,
+                    'to' => $referral->invitee_account_id,
+                    'color' => ['color' => $referral->getStatusColor()],
+                    'title' => $this->generateEdgeTooltip($referral),
+                    'arrows' => 'to',
+                    'width' => 3,
+                    'data' => [
+                        'status' => $referral->status,
+                        'created_at' => $referral->created_at->format('M d, Y'),
+                    ]
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'nodes' => $nodes,
+                'edges' => $edges,
+                'stats' => MexcReferral::getStatistics(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating network data: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading network data',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new referral connection via API.
+     *
+     * @param ReferralRequest $request
+     * @return JsonResponse
+     */
+    public function store(ReferralRequest $request): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
             $validatedData = $request->validated();
-
-            // Check if inviter has reached the limit of 5 invitations
-            if (MexcReferral::hasReachedInviteLimit($validatedData['inviter_account_id'])) {
-                return redirect()->back()->withInput()->with('error', 'This inviter account has already reached the maximum limit of 5 invitations.');
-            }
-
-            // Check if invitee is already invited by someone else
-            $inviteeAccount = MexcAccount::find($validatedData['invitee_account_id']);
-            if ($inviteeAccount->isAlreadyInvited()) {
-                return redirect()->back()->withInput()->with('error', 'This account has already been invited by another account.');
-            }
-
-            // Add current user ID as creator
             $validatedData['created_by'] = Auth::id();
 
             // Create the referral
             $referral = MexcReferral::create($validatedData);
+
+            // Load relationships for response
+            $referral->load(['inviterAccount.emailAccount', 'inviteeAccount.emailAccount']);
 
             // Log the activity
             $this->activityService->log(
@@ -137,44 +147,58 @@ class ReferralController extends Controller
                 [
                     'inviter' => $referral->inviterAccount->emailAccount->email_address,
                     'invitee' => $referral->inviteeAccount->emailAccount->email_address,
-                    'promotion_period' => $referral->promotion_period,
+                    'status' => $referral->status,
                 ]
             );
 
-            return redirect()->route('referrals.index')->with('success', 'Referral created successfully.');
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Referral connection created successfully',
+                'referral' => [
+                    'id' => $referral->id,
+                    'inviter_account_id' => $referral->inviter_account_id,
+                    'invitee_account_id' => $referral->invitee_account_id,
+                    'status' => $referral->status,
+                    'status_color' => $referral->getStatusColor(),
+                    'created_at' => $referral->created_at->format('M d, Y'),
+                    'inviter_email' => $referral->inviterAccount->emailAccount->email_address,
+                    'invitee_email' => $referral->inviteeAccount->emailAccount->email_address,
+                ]
+            ], 201);
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Error creating referral: ' . $e->getMessage());
+            DB::rollBack();
+
+            Log::error('Error creating referral: ' . $e->getMessage(), [
+                'request_data' => $request->validated(),
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create referral connection',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 
     /**
-     * Show the form for editing the specified referral.
+     * Update the status of a referral.
      *
+     * @param Request $request
      * @param MexcReferral $referral
-     * @return View
+     * @return JsonResponse
      */
-    public function edit(MexcReferral $referral): View
-    {
-        return view('referrals.edit', [
-            'referral' => $referral,
-            'mexcAccounts' => MexcAccount::with('emailAccount')->where('status', 'active')->get(),
-        ]);
-    }
-
-    /**
-     * Update the specified referral.
-     *
-     * @param ReferralRequest $request
-     * @param MexcReferral $referral
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(ReferralRequest $request, MexcReferral $referral)
+    public function updateStatus(Request $request, MexcReferral $referral): JsonResponse
     {
         try {
-            $validatedData = $request->validated();
+            $request->validate([
+                'status' => ['required', 'in:pending,completed,cancelled']
+            ]);
 
-            // Update the referral
-            $referral->update($validatedData);
+            $oldStatus = $referral->status;
+            $referral->update(['status' => $request->status]);
 
             // Log the activity
             $this->activityService->log(
@@ -182,25 +206,44 @@ class ReferralController extends Controller
                 'mexc_referral',
                 $referral,
                 [
-                    'status' => $referral->status,
-                    'inviter_rewarded' => $referral->inviter_rewarded,
-                    'invitee_rewarded' => $referral->invitee_rewarded,
+                    'old_status' => $oldStatus,
+                    'new_status' => $referral->status,
+                    'inviter' => $referral->inviterAccount->emailAccount->email_address,
+                    'invitee' => $referral->inviteeAccount->emailAccount->email_address,
                 ]
             );
 
-            return redirect()->route('referrals.index')->with('success', 'Referral updated successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Referral status updated successfully',
+                'referral' => [
+                    'id' => $referral->id,
+                    'status' => $referral->status,
+                    'status_color' => $referral->getStatusColor(),
+                ]
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Error updating referral: ' . $e->getMessage());
+            Log::error('Error updating referral status: ' . $e->getMessage(), [
+                'referral_id' => $referral->id,
+                'request_data' => $request->all(),
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update referral status',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 
     /**
-     * Remove the specified referral.
+     * Remove a referral connection.
      *
      * @param MexcReferral $referral
-     * @return \Illuminate\Http\RedirectResponse
+     * @return JsonResponse
      */
-    public function destroy(MexcReferral $referral)
+    public function destroy(MexcReferral $referral): JsonResponse
     {
         try {
             // Log the activity before deleting
@@ -211,132 +254,98 @@ class ReferralController extends Controller
                 [
                     'inviter' => $referral->inviterAccount->emailAccount->email_address,
                     'invitee' => $referral->inviteeAccount->emailAccount->email_address,
+                    'status' => $referral->status,
                 ]
             );
 
-            // Delete the referral
             $referral->delete();
 
-            return redirect()->route('referrals.index')->with('success', 'Referral deleted successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Referral connection removed successfully'
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error deleting referral: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Get the referral network data for visualization.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function networkData()
-    {
-        $data = [];
-
-        // Get all active MEXC accounts
-        $accounts = MexcAccount::with(['emailAccount', 'sentInvitations.inviteeAccount.emailAccount'])
-            ->where('status', 'active')
-            ->get();
-
-        $nodes = [];
-        $edges = [];
-
-        // Create nodes for all accounts
-        foreach ($accounts as $account) {
-            $nodes[] = [
-                'id' => $account->id,
-                'label' => $account->emailAccount->email_address,
-                'group' => $account->isAlreadyInvited() ? 'invitee' : 'root',
-                'title' => $account->emailAccount->email_address,
-                'value' => $account->sentInvitations->count() + 1, // Node size based on number of invitations
-                'data' => [
-                    'totalRewards' => $account->getTotalRewards(),
-                    'remainingSlots' => $account->getRemainingInvitationSlots(),
-                ]
-            ];
-
-            // Create edges for invitations
-            foreach ($account->sentInvitations as $invitation) {
-                $edges[] = [
-                    'from' => $account->id,
-                    'to' => $invitation->invitee_account_id,
-                    'value' => 1,
-                    'title' => 'Invited on ' . $invitation->created_at->format('M d, Y'),
-                    'arrows' => 'to',
-                    'color' => [
-                        'color' => $invitation->status === 'completed' ? '#00DEA3' :
-                            ($invitation->status === 'pending' ? '#5A55D2' : '#F56565')
-                    ]
-                ];
-            }
-        }
-
-        $data = [
-            'nodes' => $nodes,
-            'edges' => $edges
-        ];
-
-        return response()->json($data);
-    }
-
-    /**
-     * Mark a referral as completed.
-     *
-     * @param MexcReferral $referral
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function markAsCompleted(MexcReferral $referral)
-    {
-        try {
-            $referral->update([
-                'status' => 'completed',
-                'inviter_rewarded' => true,
-                'invitee_rewarded' => true,
+            Log::error('Error deleting referral: ' . $e->getMessage(), [
+                'referral_id' => $referral->id,
+                'exception' => $e,
             ]);
 
-            $this->activityService->log(
-                'update',
-                'mexc_referral',
-                $referral,
-                [
-                    'status' => 'completed',
-                    'rewards' => 'Both inviter and invitee rewarded $20 each',
-                ]
-            );
-
-            return redirect()->route('referrals.index')->with('success', 'Referral marked as completed successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error updating referral: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove referral connection',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 
     /**
-     * Mark a referral as failed.
+     * Get account details for the network.
      *
-     * @param MexcReferral $referral
-     * @return \Illuminate\Http\RedirectResponse
+     * @param MexcAccount $account
+     * @return JsonResponse
      */
-    public function markAsFailed(MexcReferral $referral)
+    public function accountDetails(MexcAccount $account): JsonResponse
     {
         try {
-            $referral->update([
-                'status' => 'failed',
-                'inviter_rewarded' => false,
-                'invitee_rewarded' => false,
-            ]);
+            $account->load(['emailAccount', 'sentInvitations', 'web3Wallet']);
 
-            $this->activityService->log(
-                'update',
-                'mexc_referral',
-                $referral,
-                [
-                    'status' => 'failed',
-                    'message' => 'Referral requirements not met',
+            $sentInvitations = $account->sentInvitations->count();
+            $isInvited = MexcReferral::where('invitee_account_id', $account->id)->exists();
+
+            return response()->json([
+                'success' => true,
+                'account' => [
+                    'id' => $account->id,
+                    'email' => $account->emailAccount->email_address,
+                    'status' => $account->status,
+                    'sent_invitations' => $sentInvitations,
+                    'remaining_slots' => 5 - $sentInvitations,
+                    'is_invited' => $isInvited,
+                    'has_wallet' => $account->web3Wallet !== null,
+                    'created_at' => $account->created_at->format('M d, Y'),
                 ]
-            );
-
-            return redirect()->route('referrals.index')->with('success', 'Referral marked as failed.');
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error updating referral: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load account details'
+            ], 500);
         }
+    }
+
+    /**
+     * Generate tooltip content for a node.
+     *
+     * @param MexcAccount $account
+     * @param int $sentInvitations
+     * @param int $remainingSlots
+     * @return string
+     */
+    private function generateNodeTooltip(MexcAccount $account, int $sentInvitations, int $remainingSlots): string
+    {
+        return sprintf(
+            "%s\nSent: %d/5 invitations\nRemaining: %d slots\nStatus: %s",
+            $account->emailAccount->email_address,
+            $sentInvitations,
+            $remainingSlots,
+            ucfirst($account->status)
+        );
+    }
+
+    /**
+     * Generate tooltip content for an edge.
+     *
+     * @param MexcReferral $referral
+     * @return string
+     */
+    private function generateEdgeTooltip(MexcReferral $referral): string
+    {
+        return sprintf(
+            "Referral: %s → %s\nStatus: %s\nCreated: %s",
+            $referral->inviterAccount->emailAccount->email_address,
+            $referral->inviteeAccount->emailAccount->email_address,
+            $referral->getStatusLabel(),
+            $referral->created_at->format('M d, Y')
+        );
     }
 }

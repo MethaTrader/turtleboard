@@ -9,7 +9,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/charts.js',
                 'resources/js/onboarding.js',
-                'resources/js/referral-network.js'
+                'resources/js/interactive-referral-network.js'
             ],
             refresh: true,
         }),

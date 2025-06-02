@@ -1,0 +1,350 @@
+/* resources/css/animations.css */
+
+/* Network-specific animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Node animations */
+@keyframes nodeSelect {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes nodeHover {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    100% {
+        transform: scale(1.05);
+        filter: brightness(1.1);
+    }
+}
+
+/* Edge animations */
+@keyframes edgeCreate {
+    0% {
+        opacity: 0;
+        stroke-dasharray: 0, 1000;
+    }
+    50% {
+        opacity: 0.5;
+        stroke-dasharray: 500, 500;
+    }
+    100% {
+        opacity: 0.8;
+        stroke-dasharray: 1000, 0;
+    }
+}
+
+@keyframes edgePulse {
+    0%, 100% {
+        stroke-width: 3;
+        opacity: 0.8;
+    }
+    50% {
+        stroke-width: 5;
+        opacity: 1;
+    }
+}
+
+/* Connection mode animations */
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(0, 222, 163, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(0, 222, 163, 0);
+    }
+}
+
+@keyframes connectionModeGlow {
+    0%, 100% {
+        border-color: #00DEA3;
+        box-shadow: 0 0 5px rgba(0, 222, 163, 0.3);
+    }
+    50% {
+        border-color: #00C090;
+        box-shadow: 0 0 15px rgba(0, 222, 163, 0.6);
+    }
+}
+
+/* Toast animations */
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -30px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -30px);
+    }
+}
+
+/* Loading animations */
+@keyframes loadingSpinner {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes loadingPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Modal animations */
+@keyframes modalBackdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalContentSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Button hover animations */
+@keyframes buttonHover {
+    from {
+        transform: translateY(0);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    to {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+}
+
+/* Control panel animations */
+@keyframes controlPanelSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Network container animations */
+.network-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.network-container.loading {
+    animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+/* Node states */
+.vis-network .vis-node.connection-mode {
+    animation: highlightPulse 2s infinite;
+}
+
+.vis-network .vis-node.selected {
+    animation: nodeSelect 0.3s ease-out;
+}
+
+.vis-network .vis-node:hover {
+    animation: nodeHover 0.2s ease-out forwards;
+}
+
+/* Edge states */
+.vis-network .vis-edge.creating {
+    animation: edgeCreate 0.8s ease-out;
+}
+
+.vis-network .vis-edge.active {
+    animation: edgePulse 2s ease-in-out infinite;
+}
+
+/* UI Component animations */
+.toast {
+    animation: toastSlideIn 0.3s ease-out;
+}
+
+.toast.hiding {
+    animation: toastSlideOut 0.3s ease-out forwards;
+}
+
+.modal-backdrop {
+    animation: modalBackdropFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    animation: modalContentSlideIn 0.3s ease-out;
+}
+
+.control-panel {
+    animation: controlPanelSlideIn 0.4s ease-out;
+}
+
+.button-hover {
+    transition: all 0.2s ease;
+}
+
+.button-hover:hover {
+    animation: buttonHover 0.2s ease-out forwards;
+}
+
+/* Loading states */
+.loading-spinner {
+    animation: loadingSpinner 1s linear infinite;
+}
+
+.loading-pulse {
+    animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+/* Responsive animations */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High performance animations for large networks */
+.vis-network.performance-mode .vis-node,
+.vis-network.performance-mode .vis-edge {
+    will-change: auto;
+}
+
+.vis-network.performance-mode .vis-node:hover,
+.vis-network.performance-mode .vis-edge:hover {
+    will-change: transform, opacity;
+}
+
+/* Custom network animations */
+.network-stabilizing {
+    position: relative;
+}
+
+.network-stabilizing::after {
+    content: "Organizing network...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #5A55D2;
+    animation: loadingPulse 1.5s ease-in-out infinite;
+    z-index: 1000;
+}
+
+/* Error state animations */
+@keyframes errorShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.error-animation {
+    animation: errorShake 0.5s ease-in-out;
+}
+
+/* Success state animations */
+@keyframes successBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.success-animation {
+    animation: successBounce 0.8s ease-in-out;
+}

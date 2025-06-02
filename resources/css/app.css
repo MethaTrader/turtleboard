@@ -1,5 +1,6 @@
 /* Add this line to resources/css/app.css */
 @import './referral-network.css';
+@import './animations.css';
 
 @import 'shepherd.js/dist/css/shepherd.css';
 @import './shepherd-custom.css';

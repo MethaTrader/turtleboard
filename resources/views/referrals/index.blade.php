@@ -53,39 +53,6 @@
             </div>
         </div>
 
-        <!-- Promotion Period Selector -->
-        <div class="bg-card rounded-card shadow-card p-4">
-            <div class="flex items-center space-x-4">
-                <div class="font-medium text-text-primary">Promotion Period:</div>
-                <div class="flex space-x-2">
-                    @php
-                        $currentMonth = date('Y-m');
-                        $periods = [];
-
-                        // Generate periods for the last 3 months (6 half-month periods)
-                        for ($i = 0; $i < 3; $i++) {
-                            $month = date('Y-m', strtotime("-$i months"));
-                            $periods[] = [
-                                'value' => $month . '-01',
-                                'label' => date('F Y', strtotime($month)) . ' (1st Half)'
-                            ];
-                            $periods[] = [
-                                'value' => $month . '-16',
-                                'label' => date('F Y', strtotime($month)) . ' (2nd Half)'
-                            ];
-                        }
-                    @endphp
-
-                    <select id="promotion-period" class="rounded-md border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20 text-sm">
-                        <option value="all">All Periods</option>
-                        @foreach($periods as $period)
-                            <option value="{{ $period['value'] }}">{{ $period['label'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        </div>
-
         <!-- Interactive Network Visualization -->
         <div class="bg-card rounded-card shadow-card overflow-hidden">
             <!-- Header -->
@@ -95,6 +62,35 @@
                     <h3 class="text-lg font-semibold text-text-primary">Referral Network</h3>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Period Filter -->
+                    <div class="flex items-center space-x-2">
+                        <label for="promotion-period" class="text-sm font-medium text-text-secondary">Period:</label>
+                        @php
+                            $currentMonth = date('Y-m');
+                            $periods = [];
+
+                            // Generate periods for the last 3 months (6 half-month periods)
+                            for ($i = 0; $i < 3; $i++) {
+                                $month = date('Y-m', strtotime("-$i months"));
+                                $periods[] = [
+                                    'value' => $month . '-01',
+                                    'label' => date('F Y', strtotime($month)) . ' (1st Half)'
+                                ];
+                                $periods[] = [
+                                    'value' => $month . '-16',
+                                    'label' => date('F Y', strtotime($month)) . ' (2nd Half)'
+                                ];
+                            }
+                        @endphp
+
+                        <select id="promotion-period" class="rounded-md border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20 text-sm">
+                            <option value="all">All Periods</option>
+                            @foreach($periods as $period)
+                                <option value="{{ $period['value'] }}">{{ $period['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="flex items-center space-x-3 text-sm">
                         <div class="flex items-center">
                             <div class="w-3 h-3 rounded-full bg-secondary mr-2"></div>
@@ -114,7 +110,7 @@
                      class="h-[700px] w-full"
                      data-data-url="{{ route('referrals.network-data') }}"
                      data-create-url="{{ route('referrals.store') }}">
-                    <!-- Loading State -->
+                    <!-- Loading State (will be replaced by JS) -->
                     <div class="flex items-center justify-center h-full">
                         <div class="text-center">
                             <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-secondary mx-auto mb-4"></div>
@@ -140,49 +136,6 @@
                         <span class="text-text-secondary">Cancelled</span>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Available Accounts Summary -->
-        <div class="bg-card rounded-card shadow-card p-6">
-            <h3 class="text-lg font-semibold text-text-primary mb-4">Available Accounts</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($mexcAccounts as $account)
-                    @php
-                        $sentInvitations = $account->sentInvitations->count();
-                        $remainingSlots = 5 - $sentInvitations;
-                        $isInvited = \App\Models\MexcReferral::where('invitee_account_id', $account->id)->exists();
-                    @endphp
-                    <div class="border border-gray-200 rounded-lg p-4 hover:border-secondary/50 transition-colors">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 rounded-full {{ $isInvited ? 'bg-success/10 text-success' : 'bg-secondary/10 text-secondary' }} flex items-center justify-center mr-3">
-                                    @php
-                                        $provider = strtolower($account->emailAccount->provider);
-                                        $icon = match($provider) {
-                                            'gmail' => '<i class="fab fa-google text-sm"></i>',
-                                            'outlook' => '<i class="fab fa-microsoft text-sm"></i>',
-                                            'yahoo' => '<i class="fab fa-yahoo text-sm"></i>',
-                                            'iCloud' => '<i class="fa-brands fa-apple text-sm"></i>',
-                                            default => '<i class="fas fa-user text-sm"></i>',
-                                        };
-                                    @endphp
-                                    {!! $icon !!}
-                                </div>
-                                <div>
-                                    <p class="font-medium text-text-primary text-sm">{{ $account->emailAccount->email_address }}</p>
-                                    <p class="text-xs text-text-secondary">{{ $isInvited ? 'Invited Account' : 'Root Account' }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-text-secondary">Invitations: {{ $sentInvitations }}/5</span>
-                            <span class="px-2 py-1 rounded-full {{ $remainingSlots > 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">
-                                {{ $remainingSlots }} slots left
-                            </span>
-                        </div>
-                    </div>
-                @endforeach
             </div>
         </div>
     </div>
@@ -262,7 +215,10 @@
 @endsection
 
 @push('scripts')
-    @vite('resources/js/interactive-referral-network.js')
+    @vite([
+        'resources/css/animations.css',
+        'resources/js/interactive-referral-network.js'
+    ])
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -292,7 +248,11 @@
             // Refresh network functionality
             const refreshButton = document.getElementById('refreshNetwork');
             refreshButton?.addEventListener('click', () => {
-                location.reload();
+                if (window.referralNetwork && typeof window.referralNetwork.refresh === 'function') {
+                    window.referralNetwork.refresh();
+                } else {
+                    location.reload();
+                }
             });
 
             // Close modal with Escape key
@@ -302,23 +262,39 @@
                 }
             });
 
-            // Promotion period filter
+            // Period filter functionality
             const periodSelector = document.getElementById('promotion-period');
             if (periodSelector) {
                 periodSelector.addEventListener('change', function() {
                     const period = this.value;
-                    const networkContainer = document.getElementById('interactive-network-visualization');
 
-                    if (networkContainer && window.referralNetwork) {
-                        // Build the filtered URL
-                        let baseUrl = networkContainer.dataset.dataUrl;
-                        let url = period === 'all' ? baseUrl : `${baseUrl}?period=${period}`;
-
-                        // Reload network data with filter
-                        window.referralNetwork.loadData(url);
+                    if (window.referralNetwork && typeof window.referralNetwork.filterByPeriod === 'function') {
+                        window.referralNetwork.filterByPeriod(period === 'all' ? null : period);
                     }
                 });
             }
+
+            // Listen for network optimization events
+            document.addEventListener('networkOptimized', function(e) {
+                const { analysis, optimized } = e.detail;
+
+                if (optimized) {
+                    // Show toast notification about optimization
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    toast.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-rocket mr-2"></i>
+                            <span>Performance mode enabled for better responsiveness</span>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 5000);
+                }
+            });
         });
     </script>
 @endpush

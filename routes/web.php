@@ -7,6 +7,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\EmailGeneratorController;
+use App\Http\Controllers\KpiDashboardController;
 use App\Http\Controllers\MexcAccountController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
@@ -125,4 +126,34 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
         }
     });
+});
+
+// KPI Gamification Routes
+Route::middleware(['auth'])->prefix('kpi')->name('kpi.')->group(function () {
+    // Main KPI dashboard
+    Route::get('/dashboard', [KpiDashboardController::class, 'index'])->name('dashboard');
+
+    // Task completion
+    Route::post('/tasks/{taskId}/complete', [KpiDashboardController::class, 'completeTask'])->name('tasks.complete');
+
+    // Turtle interaction
+    Route::post('/turtle/feed', [KpiDashboardController::class, 'feedTurtle'])->name('turtle.feed');
+    Route::post('/turtle/rename', [KpiDashboardController::class, 'renameTurtle'])->name('turtle.rename');
+    Route::get('/turtle/details', [KpiDashboardController::class, 'getTurtleDetails'])->name('turtle.details');
+
+    // Shop and items
+    Route::get('/shop', [KpiDashboardController::class, 'shop'])->name('shop');
+    Route::post('/items/{itemId}/buy', [KpiDashboardController::class, 'buyItem'])->name('items.buy');
+    Route::post('/items/{itemId}/equip', [KpiDashboardController::class, 'equipItem'])->name('items.equip');
+
+    // Turtle customization
+    Route::get('/customize', [KpiDashboardController::class, 'customize'])->name('customize');
+    Route::get('/turtle-care', [KpiDashboardController::class, 'turtleCare'])->name('turtle-care');
+
+    // Achievements and leaderboard
+    Route::get('/achievements', [KpiDashboardController::class, 'achievements'])->name('achievements');
+    Route::get('/leaderboard', [KpiDashboardController::class, 'leaderboard'])->name('leaderboard');
+
+    // Account creation callback
+    Route::post('/check-account-creation', [KpiDashboardController::class, 'checkAccountCreation'])->name('check-account-creation');
 });

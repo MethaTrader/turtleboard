@@ -87,6 +87,16 @@ class KpiGamificationService
                         'target' => $task->requirements['count'] ?? 1,
                     ]);
                 }
+            } elseif ($task->type === 'recurring') {
+                // For recurring tasks, always allow completion
+                if ($userTask->completed_at) {
+                    $userTask = new KpiUserTask([
+                        'user_id' => $user->id,
+                        'kpi_task_id' => $task->id,
+                        'progress' => 0,
+                        'target' => $task->requirements['count'] ?? 1,
+                    ]);
+                }
             }
 
             // If it's a new task, set up the initial values
@@ -96,10 +106,17 @@ class KpiGamificationService
             }
 
             // For already completed non-recurring tasks, return early
-            if ($userTask->isCompleted() && !in_array($task->type, ['daily', 'weekly'])) {
+            if ($userTask->isCompleted() && !in_array($task->type, ['daily', 'weekly', 'recurring'])) {
                 $result['message'] = 'Task already completed';
                 DB::commit();
                 return $result;
+            }
+
+            // For recurring tasks that are completed, allow new completion
+            if ($userTask->isCompleted() && $task->type === 'recurring') {
+                $userTask->progress = 0;
+                $userTask->completed_at = null;
+                $userTask->target = $task->requirements['count'] ?? 1;
             }
 
             // Increment progress and check if completed
@@ -256,7 +273,7 @@ class KpiGamificationService
         ];
 
         try {
-            // Get active targets for this metric type
+            // Get active targets for this metric type that are currently in their time period
             $targets = KpiTarget::where('metric_type', $metricType)
                 ->active()
                 ->current()
@@ -336,37 +353,53 @@ class KpiGamificationService
 
     /**
      * Calculate the current value for a metric type
+     * FIXED: Better date handling for current targets
      */
     protected function calculateMetricValue(User $user, string $metricType, KpiTarget $target): int
     {
         $startDate = $target->start_date;
         $endDate = $target->end_date;
 
+        // For current period tracking, adjust dates if needed
+        $now = Carbon::now();
+
+        // If the target period has started but the end date is in the future,
+        // we should count from start date to now
+        if ($startDate <= $now && $endDate >= $now) {
+            // Count within the target period
+            $countStartDate = $startDate;
+            $countEndDate = $now;
+        } else {
+            // Use the original range
+            $countStartDate = $startDate;
+            $countEndDate = $endDate;
+        }
+
         switch ($metricType) {
             case 'mexc_accounts':
                 return MexcAccount::where('user_id', $user->id)
-                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->whereBetween('created_at', [$countStartDate, $countEndDate])
                     ->count();
 
             case 'email_accounts':
                 return EmailAccount::where('user_id', $user->id)
-                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->whereBetween('created_at', [$countStartDate, $countEndDate])
                     ->count();
 
             case 'proxies':
                 return Proxy::where('user_id', $user->id)
-                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->whereBetween('created_at', [$countStartDate, $countEndDate])
                     ->count();
 
             case 'web3_wallets':
                 return Web3Wallet::where('user_id', $user->id)
-                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->whereBetween('created_at', [$countStartDate, $countEndDate])
                     ->count();
 
             case 'completed_tasks':
                 return KpiUserTask::where('user_id', $user->id)
                     ->whereNotNull('completed_at')
-                    ->whereBetween('completed_at', [$startDate, $endDate])
+                    ->whereBetween('completed_at', [$countStartDate, $countEndDate])
                     ->count();
 
             default:

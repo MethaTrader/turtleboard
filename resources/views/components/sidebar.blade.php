@@ -88,8 +88,8 @@
                     </a>
                 </li>
 
-                <li class="opacity-40">
-                    <a href="#"
+                <li>
+                    <a href="{{route('kpi.dashboard')}}"
                        class="sidebar-item"
                        :class="{'active': activeMenu === 'validation'}">
                         <i class="fas fa-check-circle text-lg w-6"></i>

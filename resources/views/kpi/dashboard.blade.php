@@ -120,8 +120,8 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $accountStats['mexc_accounts'] }}</div>
                     <div class="mt-2">
                         @foreach($turtleData['targets'] as $target)
-                            @if($target['metric_type'] === 'mexc_accounts' && $target['period_type'] === 'monthly')
-                                <div class="text-xs text-gray-500 mb-1">Monthly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
+                            @if($target['metric_type'] === 'mexc_accounts' && $target['period_type'] === 'weekly')
+                                <div class="text-xs text-gray-500 mb-1">Weekly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
                                     <div class="bg-green-500 h-2 rounded-full" style="width: {{ $target['percentage'] }}%"></div>
                                 </div>
@@ -141,8 +141,8 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $accountStats['email_accounts'] }}</div>
                     <div class="mt-2">
                         @foreach($turtleData['targets'] as $target)
-                            @if($target['metric_type'] === 'email_accounts' && $target['period_type'] === 'monthly')
-                                <div class="text-xs text-gray-500 mb-1">Monthly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
+                            @if($target['metric_type'] === 'email_accounts' && $target['period_type'] === 'weekly')
+                                <div class="text-xs text-gray-500 mb-1">Weekly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
                                     <div class="bg-purple-500 h-2 rounded-full" style="width: {{ $target['percentage'] }}%"></div>
                                 </div>
@@ -162,8 +162,8 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $accountStats['proxies'] }}</div>
                     <div class="mt-2">
                         @foreach($turtleData['targets'] as $target)
-                            @if($target['metric_type'] === 'proxies' && $target['period_type'] === 'monthly')
-                                <div class="text-xs text-gray-500 mb-1">Monthly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
+                            @if($target['metric_type'] === 'proxies' && $target['period_type'] === 'weekly')
+                                <div class="text-xs text-gray-500 mb-1">Weekly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
                                     <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $target['percentage'] }}%"></div>
                                 </div>
@@ -183,8 +183,8 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $accountStats['web3_wallets'] }}</div>
                     <div class="mt-2">
                         @foreach($turtleData['targets'] as $target)
-                            @if($target['metric_type'] === 'web3_wallets' && $target['period_type'] === 'monthly')
-                                <div class="text-xs text-gray-500 mb-1">Monthly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
+                            @if($target['metric_type'] === 'web3_wallets' && $target['period_type'] === 'weekly')
+                                <div class="text-xs text-gray-500 mb-1">Weekly Goal: {{ $target['current_value'] }}/{{ $target['target_value'] }}</div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
                                     <div class="bg-orange-500 h-2 rounded-full" style="width: {{ $target['percentage'] }}%"></div>
                                 </div>
@@ -202,59 +202,110 @@
                 <div class="p-4 bg-secondary/10 border-b border-gray-200">
                     <h3 class="font-bold text-gray-800 flex items-center">
                         <i class="fas fa-tasks mr-2 text-secondary"></i>
-                        <span>Daily Tasks</span>
+                        <span>Weekly Tasks & Targets</span>
                     </h3>
                 </div>
 
                 <div class="p-6 space-y-4 max-h-96 overflow-y-auto">
-                    <template x-for="task in dailyTasks" :key="task.id">
-                        <div class="border border-gray-200 rounded-lg p-4 transition-all" :class="{'opacity-50': task.completed}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-medium text-gray-800" x-text="task.name"></h4>
-                                    <p class="text-sm text-gray-600 mt-1" x-text="task.description"></p>
-                                </div>
-
-                                <div class="flex flex-col items-end">
-                                    <div class="flex items-center text-primary font-medium mb-2">
-                                        <i class="fas fa-heart mr-1"></i>
-                                        <span x-text="task.love_reward"></span>
+                    <!-- Weekly Tasks Section -->
+                    <div class="mb-6">
+                        <h4 class="font-medium text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-calendar-week mr-2 text-primary"></i>
+                            Weekly Tasks
+                        </h4>
+                        <template x-for="task in weeklyTasks" :key="task.id">
+                            <div class="border border-gray-200 rounded-lg p-4 transition-all" :class="{'opacity-50': task.completed}">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h5 class="font-medium text-gray-800" x-text="task.name"></h5>
+                                        <p class="text-sm text-gray-600 mt-1" x-text="task.description"></p>
                                     </div>
 
-                                    <template x-if="!task.completed">
-                                        <button @click="completeTask(task.id)"
-                                                class="bg-secondary hover:bg-secondary/90 text-white text-sm py-1 px-3 rounded-md transition-colors"
-                                                :disabled="task.progress < task.target">
-                                            <span x-text="task.progress < task.target ? `${task.progress}/${task.target}` : 'Complete'"></span>
-                                        </button>
-                                    </template>
-
-                                    <template x-if="task.completed">
-                                        <div class="bg-green-100 text-green-800 text-sm py-1 px-3 rounded-md flex items-center">
-                                            <i class="fas fa-check mr-1"></i>
-                                            <span>Completed</span>
+                                    <div class="flex flex-col items-end">
+                                        <div class="flex items-center text-primary font-medium mb-2">
+                                            <i class="fas fa-heart mr-1"></i>
+                                            <span x-text="task.love_reward"></span>
                                         </div>
-                                    </template>
-                                </div>
-                            </div>
 
-                            <template x-if="!task.completed && task.progress > 0">
+                                        <template x-if="!task.completed">
+                                            <button @click="completeTask(task.id)"
+                                                    class="bg-secondary hover:bg-secondary/90 text-white text-sm py-1 px-3 rounded-md transition-colors"
+                                                    :disabled="task.progress < task.target">
+                                                <span x-text="task.progress < task.target ? `${task.progress}/${task.target}` : 'Complete'"></span>
+                                            </button>
+                                        </template>
+
+                                        <template x-if="task.completed">
+                                            <div class="bg-green-100 text-green-800 text-sm py-1 px-3 rounded-md flex items-center">
+                                                <i class="fas fa-check mr-1"></i>
+                                                <span>Completed</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <template x-if="!task.completed && task.progress > 0">
+                                    <div class="mt-3">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-secondary h-2 rounded-full" :style="`width: ${task.percentage}%`"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Weekly Targets Section -->
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-bullseye mr-2 text-success"></i>
+                            Weekly Targets
+                        </h4>
+                        <template x-for="target in weeklyTargets" :key="target.id">
+                            <div class="border border-gray-200 rounded-lg p-4 transition-all" :class="{'bg-green-50 border-green-200': target.achieved}">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h5 class="font-medium text-gray-800" x-text="target.name"></h5>
+                                        <p class="text-sm text-gray-600 mt-1" x-text="target.description"></p>
+                                    </div>
+
+                                    <div class="flex flex-col items-end">
+                                        <div class="flex items-center text-primary font-medium mb-2">
+                                            <i class="fas fa-heart mr-1"></i>
+                                            <span x-text="target.love_reward"></span>
+                                        </div>
+
+                                        <template x-if="target.achieved">
+                                            <div class="bg-green-100 text-green-800 text-sm py-1 px-3 rounded-md flex items-center">
+                                                <i class="fas fa-trophy mr-1"></i>
+                                                <span>Achieved</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="!target.achieved">
+                                            <div class="text-sm text-gray-600">
+                                                <span x-text="`${target.current_value}/${target.target_value}`"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
                                 <div class="mt-3">
                                     <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-secondary h-2 rounded-full" :style="`width: ${task.percentage}%`"></div>
+                                        <div class="bg-success h-2 rounded-full" :style="`width: ${target.percentage}%`"></div>
                                     </div>
                                 </div>
-                            </template>
-                        </div>
-                    </template>
+                            </div>
+                        </template>
+                    </div>
 
-                    <template x-if="dailyTasks.length === 0">
+                    <template x-if="weeklyTasks.length === 0 && weeklyTargets.length === 0">
                         <div class="text-center py-8">
                             <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                 <i class="fas fa-check-circle text-2xl text-gray-400"></i>
                             </div>
-                            <h4 class="text-lg font-medium text-gray-700">All tasks completed!</h4>
-                            <p class="text-sm text-gray-500 mt-1">Come back tomorrow for new tasks</p>
+                            <h4 class="text-lg font-medium text-gray-700">All weekly tasks completed!</h4>
+                            <p class="text-sm text-gray-500 mt-1">Check back next week for new challenges</p>
                         </div>
                     </template>
                 </div>
@@ -440,10 +491,14 @@
                 turtleBackground: "/images/turtles/backgrounds/beach.png", // Default background
                 equippedAccessories: [],
 
-                // Tasks
-                dailyTasks: @json($turtleData['tasks']->filter(function($task) {
-    return $task['type'] === 'daily' && !$task['completed'];
-})->values()),
+                // Tasks and targets - filter for weekly only
+                weeklyTasks: @json($turtleData['tasks']->filter(function($task) {
+                    return $task['type'] === 'weekly' && !$task['completed'];
+                })->values()),
+
+                weeklyTargets: @json($turtleData['targets']->filter(function($target) {
+                    return $target['period_type'] === 'weekly' && !$target['achieved'];
+                })->values()),
 
                 // Modals
                 feedModalOpen: false,
@@ -609,7 +664,7 @@
 
                         if (data.success) {
                             // Update task list
-                            this.dailyTasks = this.dailyTasks.map(task => {
+                            this.weeklyTasks = this.weeklyTasks.map(task => {
                                 if (task.id === taskId) {
                                     return {
                                         ...task,
@@ -661,8 +716,9 @@
                             this.turtleHappiness = data.turtle.happiness;
                             this.turtleMood = data.turtle.mood;
 
-                            // Update tasks
-                            this.dailyTasks = data.tasks.filter(task => task.type === 'daily' && !task.completed);
+                            // Update tasks and targets
+                            this.weeklyTasks = data.tasks.filter(task => task.type === 'weekly' && !task.completed);
+                            this.weeklyTargets = data.targets.filter(target => target.period_type === 'weekly' && !target.achieved);
 
                             // Load equipped items
                             this.loadEquippedItems();

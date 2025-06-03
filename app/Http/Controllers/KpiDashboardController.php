@@ -145,6 +145,7 @@ class KpiDashboardController extends Controller
         $user = Auth::user();
         $turtleData = $this->kpiService->getTurtleDetails($user);
 
+        // Get all shop items grouped by type
         $shopItems = KpiTurtleItem::available()
             ->get()
             ->groupBy('type');

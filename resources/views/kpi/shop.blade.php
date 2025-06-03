@@ -111,6 +111,17 @@
                             </div>
                         </div>
                     </template>
+
+                    <!-- Empty state for shells -->
+                    <template x-if="shellItems.length === 0">
+                        <div class="col-span-full text-center py-8">
+                            <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-shopping-bag text-2xl text-gray-400"></i>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-700">No shells available</h4>
+                            <p class="text-sm text-gray-500 mt-1">Check back later for new items</p>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -162,6 +173,17 @@
                                     </template>
                                 </div>
                             </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty state for backgrounds -->
+                    <template x-if="backgroundItems.length === 0">
+                        <div class="col-span-full text-center py-8">
+                            <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-shopping-bag text-2xl text-gray-400"></i>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-700">No backgrounds available</h4>
+                            <p class="text-sm text-gray-500 mt-1">Check back later for new items</p>
                         </div>
                     </template>
                 </div>
@@ -222,6 +244,17 @@
                                     </template>
                                 </div>
                             </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty state for accessories -->
+                    <template x-if="accessoryItems.length === 0">
+                        <div class="col-span-full text-center py-8">
+                            <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-shopping-bag text-2xl text-gray-400"></i>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-700">No accessories available</h4>
+                            <p class="text-sm text-gray-500 mt-1">Check back later for new items</p>
                         </div>
                     </template>
                 </div>
@@ -314,16 +347,16 @@
     <script>
         function turtleShop() {
             return {
-                // Turtle data
-                turtleName: "{{ $turtleData['turtle']['name'] }}",
-                turtleLevel: {{ $turtleData['turtle']['level'] }},
-                turtleLovePoints: {{ $turtleData['turtle']['love_points'] }},
+                // Initialize all variables first to prevent undefined errors
+                turtleName: "",
+                turtleLevel: 1,
+                turtleLovePoints: 0,
                 turtleShell: "/images/turtles/shells/green.png",
 
                 // Tab state
                 activeTab: 'shells',
 
-                // Items by category
+                // Items by category - initialize as empty arrays
                 shellItems: [],
                 backgroundItems: [],
                 accessoryItems: [],
@@ -341,6 +374,11 @@
 
                 // Initialize
                 init() {
+                    // Set turtle data from server
+                    this.turtleName = @json($turtleData['turtle']['name'] ?? 'Shelly');
+                    this.turtleLevel = @json($turtleData['turtle']['level'] ?? 1);
+                    this.turtleLovePoints = @json($turtleData['turtle']['love_points'] ?? 0);
+
                     this.loadItems();
                     this.loadInventory();
                     this.loadTurtleAppearance();
@@ -359,6 +397,7 @@
                     // Get all available items grouped by type
                     const shopItems = @json($shopItems ?? []);
 
+                    // Initialize arrays to prevent errors
                     this.shellItems = shopItems.shell || [];
                     this.backgroundItems = shopItems.background || [];
                     this.accessoryItems = shopItems.accessory || [];
@@ -375,16 +414,19 @@
                 },
 
                 userOwnsItem(item) {
+                    if (!item || !this.ownedItems) return false;
                     return this.ownedItems.some(owned => owned.id === item.id);
                 },
 
                 canPurchase(item) {
+                    if (!item) return false;
                     return !this.userOwnsItem(item) &&
                         this.turtleLovePoints >= item.love_cost &&
                         this.turtleLevel >= item.required_level;
                 },
 
                 purchaseItem(item) {
+                    if (!item) return;
                     this.selectedItem = item;
                     this.purchaseModalOpen = true;
                 },

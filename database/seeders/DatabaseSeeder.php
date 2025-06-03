@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
             MexcAccountsTableSeeder::class,
             AccountRelationshipsTableSeeder::class,
             CompleteAccountChainSeeder::class,
+
+            // Add KPI seeder to populate tasks, targets, and turtle items
+            KpiSeeder::class,
         ]);
     }
 }

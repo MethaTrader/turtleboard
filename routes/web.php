@@ -128,7 +128,6 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// KPI Gamification Routes
 Route::middleware(['auth'])->prefix('kpi')->name('kpi.')->group(function () {
     // Main KPI dashboard
     Route::get('/dashboard', [KpiDashboardController::class, 'index'])->name('dashboard');

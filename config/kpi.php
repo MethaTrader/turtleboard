@@ -17,7 +17,7 @@ return [
         'base_level_exp' => 100,
 
         // Experience scaling factor (level^power)
-        'level_exp_power' => 1.5,
+        'level_exp_power' => 1.3,
 
         // Maximum level a turtle can reach
         'max_level' => 100,
@@ -76,8 +76,8 @@ return [
     'rewards' => [
         // Love points earned for different actions
         'love_points' => [
-            'mexc_account_creation' => 10,
-            'email_account_creation' => 5,
+            'mexc_account_creation' => 20,
+            'email_account_creation' => 20,
             'proxy_addition' => 5,
             'web3_wallet_creation' => 8,
             'daily_login' => 5,

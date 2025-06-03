@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/charts.js',
                 'resources/js/onboarding.js',
+                'resources/js/turtle-animations.js',
 
                 // Network visualization entry point
                 'resources/js/interactive-referral-network.js'

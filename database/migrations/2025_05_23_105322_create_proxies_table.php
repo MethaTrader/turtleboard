@@ -21,7 +21,8 @@ return new class extends Migration
             $table->string('validation_status')->default('pending');
             $table->integer('response_time')->nullable(); // in milliseconds
             $table->string('geolocation')->nullable();
-            $table->string('country_code', 2)->nullable();
+            $table->string('country_code', 3)->change(); // Change from 2 to 3 characters
+            $table->json('metadata')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

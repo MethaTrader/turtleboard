@@ -7,7 +7,12 @@
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-text-primary">Proxy Management</h2>
             <div class="flex space-x-3">
-                <button id="validateAllBtn" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-button flex items-center">
+                <!-- NEW: ProxyIPV4 Button -->
+                <a href="{{ route('accounts.proxy.proxy-ipv4') }}" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-button flex items-center">
+                    <i class="fas fa-cloud mr-2"></i>
+                    <span>ProxyIPV4</span>
+                </a>
+                <button id="validateAllBtn" class="bg-success hover:bg-success/90 text-white py-2 px-4 rounded-button flex items-center">
                     <i class="fas fa-check-circle mr-2"></i>
                     <span>Validate Pending</span>
                 </button>
@@ -20,7 +25,7 @@
 
         <!-- Filters Section -->
         <div class="bg-card p-4 rounded-card shadow-card">
-            <form action="{{ route('accounts.proxy') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form action="{{ route('accounts.proxy') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label for="status" class="block text-sm font-medium text-text-secondary mb-1">Status</label>
                     <select id="status" name="status" class="w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
@@ -28,6 +33,14 @@
                         <option value="valid" {{ request('status') == 'valid' ? 'selected' : '' }}>Valid</option>
                         <option value="invalid" {{ request('status') == 'invalid' ? 'selected' : '' }}>Invalid</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="source" class="block text-sm font-medium text-text-secondary mb-1">Source</label>
+                    <select id="source" name="source" class="w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
+                        <option value="">All Sources</option>
+                        <option value="manual" {{ request('source') == 'manual' ? 'selected' : '' }}>Manual</option>
+                        <option value="proxy_ipv4" {{ request('source') == 'proxy_ipv4' ? 'selected' : '' }}>ProxyIPV4</option>
                     </select>
                 </div>
                 <div>
@@ -46,7 +59,7 @@
         </div>
 
         <!-- Status Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div class="bg-card rounded-card shadow-card p-4 flex items-center">
                 <div class="rounded-full w-12 h-12 bg-secondary/10 flex items-center justify-center mr-4">
                     <i class="fas fa-server text-secondary text-xl"></i>
@@ -86,6 +99,27 @@
                     <p class="text-2xl font-bold text-danger">{{ $invalidCount }}</p>
                 </div>
             </div>
+
+            <!-- NEW: ProxyIPV4 Stats -->
+            <div class="bg-card rounded-card shadow-card p-4 flex items-center">
+                <div class="rounded-full w-12 h-12 bg-primary/10 flex items-center justify-center mr-4">
+                    <i class="fas fa-cloud text-primary text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-text-secondary text-sm">ProxyIPV4</p>
+                    <p class="text-2xl font-bold text-primary">{{ $proxyIPV4Count }}</p>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-card shadow-card p-4 flex items-center">
+                <div class="rounded-full w-12 h-12 bg-purple-100 flex items-center justify-center mr-4">
+                    <i class="fas fa-hand-paper text-purple-500 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-text-secondary text-sm">Manual</p>
+                    <p class="text-2xl font-bold text-purple-500">{{ $manualCount }}</p>
+                </div>
+            </div>
         </div>
 
         <!-- Proxies Table -->
@@ -115,9 +149,14 @@
                     </div>
                     <h3 class="text-lg font-semibold text-text-primary mb-2">No Proxies Found</h3>
                     <p class="text-text-secondary mb-4">You haven't added any proxies yet, or none match your filters.</p>
-                    <a href="{{ route('accounts.proxy.create') }}" class="bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-button">
-                        <i class="fas fa-plus mr-2"></i> Add Your First Proxy
-                    </a>
+                    <div class="flex justify-center space-x-3">
+                        <a href="{{ route('accounts.proxy.create') }}" class="bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-button">
+                            <i class="fas fa-plus mr-2"></i> Add Manual Proxies
+                        </a>
+                        <a href="{{ route('accounts.proxy.proxy-ipv4') }}" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-button">
+                            <i class="fas fa-cloud mr-2"></i> Browse ProxyIPV4
+                        </a>
+                    </div>
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -134,6 +173,7 @@
                                 </th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Port</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Auth</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Source</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Response Time</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Geolocation</th>
@@ -160,6 +200,27 @@
                                         @else
                                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                                 <i class="fas fa-user-times mr-1"></i> No
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <!-- NEW: Source Column -->
+                                    <td class="px-4 py-4 whitespace-nowrap">
+                                        @if($proxy->isFromProxyIPV4())
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                                <i class="fas fa-cloud mr-1"></i> ProxyIPV4
+                                            </span>
+                                            @if($proxy->isExpired())
+                                                <br><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 mt-1">
+                                                    <i class="fas fa-clock mr-1"></i> Expired
+                                                </span>
+                                            @elseif($proxy->getDaysRemaining() !== null && $proxy->getDaysRemaining() <= 7)
+                                                <br><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800 mt-1">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i> {{ $proxy->getDaysRemaining() }}d left
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                                <i class="fas fa-hand-paper mr-1"></i> Manual
                                             </span>
                                         @endif
                                     </td>
@@ -248,7 +309,7 @@
 
                 <!-- Pagination -->
                 <div class="p-4">
-                    {{ $proxies->links() }}
+                    {{ $proxies->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

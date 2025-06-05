@@ -47,14 +47,34 @@
                     </a>
                 </li>
 
-                <li>
+                <!-- Proxies with submenu -->
+                <div class="space-y-1">
                     <a href="{{ route('accounts.proxy') }}"
-                       class="sidebar-item"
-                       :class="{'active': activeMenu === 'accounts.proxy'}">
-                        <i class="fas fa-server text-lg w-6"></i>
-                        <span class="ml-3">Proxies</span>
+                       class="sidebar-item {{ Route::is('accounts.proxy') ? 'active' : '' }}"
+                       :class="{ 'active': activeMenu === 'proxy' }">
+                        <i class="fas fa-server w-5 h-5 mr-3"></i>
+                        <span>Proxies</span>
                     </a>
-                </li>
+
+                    <!-- ProxyIPV4 Submenu -->
+                    @if(Route::is('accounts.proxy*'))
+                        <div class="ml-8 space-y-1">
+                            <a href="{{ route('accounts.proxy.proxy-ipv4') }}"
+                               class="sidebar-item text-sm {{ Route::is('accounts.proxy.proxy-ipv4') ? 'active' : '' }}">
+                                <i class="fas fa-cloud w-4 h-4 mr-2"></i>
+                                <span>ProxyIPV4</span>
+                                <span class="ml-auto px-2 py-0.5 text-xs bg-primary text-white rounded-full">
+                                        New
+                                    </span>
+                            </a>
+                            <a href="{{ route('accounts.proxy.create') }}"
+                               class="sidebar-item text-sm {{ Route::is('accounts.proxy.create') ? 'active' : '' }}">
+                                <i class="fas fa-plus w-4 h-4 mr-2"></i>
+                                <span>Add Manual</span>
+                            </a>
+                        </div>
+                    @endif
+                </div>
 
                 <li>
                     <a href="{{ route('accounts.web3') }}"
@@ -79,23 +99,30 @@
                     </a>
                 </li>
 
-                <li class="opacity-40">
-                    <a href="{{ route('relationships') }}"
-                       class="sidebar-item"
-                       :class="{'active': activeMenu === 'relationships'}">
-                        <i class="fas fa-project-diagram text-lg w-6"></i>
-                        <span class="ml-3">Relationships</span>
-                    </a>
-                </li>
+                <!-- KPI & Gamification Section -->
+                <div class="mt-8">
+                    <div class="px-4 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
+                        KPI & Progress
+                    </div>
 
-                <li>
-                    <a href="{{route('kpi.dashboard')}}"
-                       class="sidebar-item"
-                       :class="{'active': activeMenu === 'validation'}">
-                        <i class="fas fa-check-circle text-lg w-6"></i>
-                        <span class="ml-3">KPI</span>
+                    <a href="{{ route('kpi.dashboard') }}"
+                       class="sidebar-item {{ Route::is('kpi.dashboard') ? 'active' : '' }}">
+                        <i class="fas fa-trophy w-5 h-5 mr-3"></i>
+                        <span>KPI Dashboard</span>
                     </a>
-                </li>
+
+                    <a href="{{ route('kpi.turtle-care') }}"
+                       class="sidebar-item {{ Route::is('kpi.turtle-care') ? 'active' : '' }}">
+                        <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                        <span>Turtle Care</span>
+                    </a>
+
+                    <a href="{{ route('kpi.leaderboard') }}"
+                       class="sidebar-item {{ Route::is('kpi.leaderboard') ? 'active' : '' }}">
+                        <i class="fas fa-medal w-5 h-5 mr-3"></i>
+                        <span>Leaderboard</span>
+                    </a>
+                </div>
 
                 @if(Auth::user()->isAdmin())
                     <li class="pt-4">

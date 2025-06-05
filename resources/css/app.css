@@ -5,6 +5,8 @@
 @import 'shepherd.js/dist/css/shepherd.css';
 @import './shepherd-custom.css';
 
+@import "./proxy-ipv4.css";
+
 @tailwind base;
 @tailwind components;
 

@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'proxy_ipv4' => [
+        'api_key' => env('PROXY_IPV4_API_KEY'),
+        'base_url' => env('PROXY_IPV4_BASE_URL', 'https://proxy-ipv4.com/client-api/v1'),
+        'timeout' => env('PROXY_IPV4_TIMEOUT', 30),
+        'cache_duration' => env('PROXY_IPV4_CACHE_DURATION', 300), // 5 minutes
+    ],
+
 ];

@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/email/{emailAccount}', [EmailAccountController::class, 'destroy'])->name('email.destroy');
         Route::get('/email/{emailAccount}/credentials', [EmailAccountController::class, 'credentials'])->name('email.credentials');
 
+
         // Proxy routes
         Route::get('/proxy', [ProxyController::class, 'index'])->name('proxy');
         Route::get('/proxy/create', [ProxyController::class, 'create'])->name('proxy.create');
@@ -94,6 +95,13 @@ Route::middleware(['auth'])->group(function () {
         // Proxy validation routes
         Route::post('/proxy/{proxy}/validate', [ProxyController::class, 'validate'])->name('proxy.validate');
         Route::post('/proxy/validate-all', [ProxyController::class, 'runValidation'])->name('proxy.validate-all');
+
+        // NEW: ProxyIPV4 Integration Routes
+        Route::get('/proxy/proxy-ipv4', [ProxyController::class, 'proxyIPV4'])->name('proxy.proxy-ipv4');
+        Route::post('/proxy/import-ipv4', [ProxyController::class, 'importProxyIPV4'])->name('proxy.import-ipv4');
+        Route::post('/proxy/refresh-ipv4', [ProxyController::class, 'refreshProxyIPV4'])->name('proxy.refresh-ipv4');
+        Route::post('/proxy/test-ipv4', [ProxyController::class, 'testProxyIPV4Connection'])->name('proxy.test-ipv4');
+
 
         // Web3 Wallets
         Route::get('/web3', [Web3WalletController::class, 'index'])->name('web3');

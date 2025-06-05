@@ -88,14 +88,14 @@ class ProxyController extends Controller
         $proxyIPV4Data = $this->proxyIPV4Service->getPurchasedProxies();
 
         // Get already imported proxies to mark them as used
-        $importedProxies = Proxy::fromProxyIPV4()->get();
+        $importedProxies = Proxy::fromProxyIPV4()->with(['emailAccount', 'emailAccount.user'])->get();
         $importedProxyIds = $importedProxies->pluck('metadata.proxy_id')->filter()->toArray();
 
         // Mark used proxies and get usage information
         if ($proxyIPV4Data['success'] && isset($proxyIPV4Data['proxies'])) {
             foreach ($proxyIPV4Data['proxies'] as &$proxy) {
                 // Check if proxy is already imported
-                $proxy['is_imported'] = in_array($proxy['id'], $importedProxyIds);
+                $proxy['is_imported'] = in_array($proxy['id'] ?? null, $importedProxyIds);
 
                 // If imported, get usage info from local database
                 if ($proxy['is_imported']) {
@@ -103,8 +103,14 @@ class ProxyController extends Controller
                     if ($localProxy) {
                         $proxy['is_used'] = $localProxy->isInUse();
                         $proxy['local_proxy'] = $localProxy;
+
                         if ($localProxy->emailAccount) {
                             $proxy['used_by'] = $localProxy->emailAccount->email_address;
+
+                            // Add the user who created/owns the email account
+                            if ($localProxy->emailAccount->user) {
+                                $proxy['used_by_user'] = $localProxy->emailAccount->user->name;
+                            }
                         }
                     }
                 }
@@ -115,18 +121,18 @@ class ProxyController extends Controller
         $filteredProxies = $proxyIPV4Data['proxies'] ?? [];
         if ($request->has('filter')) {
             $filter = $request->input('filter');
-            $filteredProxies = array_filter($filteredProxies, function($proxy) use ($filter) {
+            $filteredProxies = array_filter($filteredProxies, function ($proxy) use ($filter) {
                 switch ($filter) {
                     case 'available':
-                        return !$proxy['is_imported'] && $proxy['is_active'];
+                        return !($proxy['is_imported'] ?? false) && ($proxy['is_active'] ?? false);
                     case 'imported':
-                        return $proxy['is_imported'];
+                        return $proxy['is_imported'] ?? false;
                     case 'used':
-                        return $proxy['is_imported'] && ($proxy['is_used'] ?? false);
+                        return ($proxy['is_imported'] ?? false) && ($proxy['is_used'] ?? false);
                     case 'expired':
-                        return $proxy['days_remaining'] === 0;
+                        return ($proxy['days_remaining'] ?? null) === 0;
                     case 'expiring_soon':
-                        return $proxy['days_remaining'] !== null && $proxy['days_remaining'] <= 7 && $proxy['days_remaining'] > 0;
+                        return ($proxy['days_remaining'] ?? null) !== null && ($proxy['days_remaining'] ?? 0) <= 7 && ($proxy['days_remaining'] ?? 0) > 0;
                     default:
                         return true;
                 }
@@ -135,11 +141,11 @@ class ProxyController extends Controller
 
         // Sort by expiry date or other criteria
         $sortBy = $request->input('sort', 'expiry_date');
-        usort($filteredProxies, function($a, $b) use ($sortBy) {
+        usort($filteredProxies, function ($a, $b) use ($sortBy) {
             switch ($sortBy) {
                 case 'expiry_date':
-                    $aDate = $a['expiry_date'] ? $a['expiry_date']->timestamp : PHP_INT_MAX;
-                    $bDate = $b['expiry_date'] ? $b['expiry_date']->timestamp : PHP_INT_MAX;
+                    $aDate = isset($a['expiry_date']) ? $a['expiry_date']->timestamp : PHP_INT_MAX;
+                    $bDate = isset($b['expiry_date']) ? $b['expiry_date']->timestamp : PHP_INT_MAX;
                     return $aDate <=> $bDate;
                 case 'country':
                     return strcasecmp($a['country'] ?? '', $b['country'] ?? '');
@@ -156,11 +162,11 @@ class ProxyController extends Controller
             'filters' => $request->only(['filter', 'sort']),
             'stats' => [
                 'total' => count($proxyIPV4Data['proxies'] ?? []),
-                'available' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => !$p['is_imported'] && $p['is_active'])),
-                'imported' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['is_imported'])),
-                'used' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['is_imported'] && ($p['is_used'] ?? false))),
-                'expired' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['days_remaining'] === 0)),
-                'expiring_soon' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['days_remaining'] !== null && $p['days_remaining'] <= 7 && $p['days_remaining'] > 0)),
+                'available' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => !($p['is_imported'] ?? false) && ($p['is_active'] ?? false))),
+                'imported' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['is_imported'] ?? false)),
+                'used' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['is_imported'] ?? false) && ($p['is_used'] ?? false))),
+                'expired' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['days_remaining'] ?? null) === 0)),
+                'expiring_soon' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['days_remaining'] ?? null) !== null && ($p['days_remaining'] ?? 0) <= 7 && ($p['days_remaining'] ?? 0) > 0)),
             ]
         ]);
     }

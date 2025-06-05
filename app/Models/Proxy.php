@@ -29,8 +29,12 @@ class Proxy extends Model
         'response_time',
         'geolocation',
         'country_code',
+        'source',
+        'proxy_ipv4_id',
+        'purchase_date',
+        'expiry_date',
+        'protocol',
         'user_id',
-        'metadata', // Add metadata field for ProxyIPV4 data
     ];
 
     /**
@@ -41,15 +45,14 @@ class Proxy extends Model
     protected $casts = [
         'port' => 'integer',
         'last_validation_date' => 'datetime',
+        'purchase_date' => 'datetime',
+        'expiry_date' => 'datetime',
         'response_time' => 'integer',
         'validation_status' => 'string',
-        'metadata' => 'array', // Cast metadata as JSON
     ];
 
     /**
      * Get the password attribute.
-     *
-     * @return Attribute
      */
     protected function password(): Attribute
     {
@@ -61,8 +64,6 @@ class Proxy extends Model
 
     /**
      * Get the user that created this proxy.
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -71,8 +72,6 @@ class Proxy extends Model
 
     /**
      * Get the email account associated with this proxy.
-     *
-     * @return HasOne
      */
     public function emailAccount(): HasOne
     {
@@ -80,9 +79,50 @@ class Proxy extends Model
     }
 
     /**
+     * Check if this proxy is from ProxyIPV4 service.
+     */
+    public function isFromProxyIPV4(): bool
+    {
+        return $this->source === 'proxy_ipv4';
+    }
+
+    /**
+     * Check if proxy is expired (for ProxyIPV4 proxies).
+     */
+    public function isExpired(): bool
+    {
+        if (!$this->expiry_date) {
+            return false;
+        }
+        return $this->expiry_date->isPast();
+    }
+
+    /**
+     * Get days remaining until expiry.
+     */
+    public function getDaysRemaining(): ?int
+    {
+        if (!$this->expiry_date) {
+            return null;
+        }
+
+        if ($this->expiry_date->isPast()) {
+            return 0;
+        }
+
+        return now()->diffInDays($this->expiry_date);
+    }
+
+    /**
+     * Check if this proxy is currently in use by any email account.
+     */
+    public function isInUse(): bool
+    {
+        return $this->emailAccount()->exists();
+    }
+
+    /**
      * Get the full proxy string (IP:PORT:USERNAME:PASSWORD).
-     *
-     * @return string
      */
     public function getFullProxyString(): string
     {
@@ -90,9 +130,8 @@ class Proxy extends Model
 
         if ($this->username) {
             $parts[] = $this->username;
-
             if ($this->password) {
-                $parts[] = $this->getOriginal('password') ? $this->password : '';
+                $parts[] = $this->password;
             }
         }
 
@@ -100,22 +139,7 @@ class Proxy extends Model
     }
 
     /**
-     * Check if the proxy is valid.
-     *
-     * @return bool
-     */
-    public function isValid(): bool
-    {
-        return $this->validation_status === 'valid';
-    }
-
-    /**
      * Mark the proxy as valid.
-     *
-     * @param  int  $responseTime
-     * @param  string|null  $geolocation
-     * @param  string|null  $countryCode
-     * @return bool
      */
     public function markAsValid(int $responseTime, ?string $geolocation = null, ?string $countryCode = null): bool
     {
@@ -130,8 +154,6 @@ class Proxy extends Model
 
     /**
      * Mark the proxy as invalid.
-     *
-     * @return bool
      */
     public function markAsInvalid(): bool
     {
@@ -143,142 +165,33 @@ class Proxy extends Model
 
     /**
      * Get the flag URL for the proxy's country.
-     *
-     * @return string|null
      */
     public function getFlagUrl(): ?string
     {
         if (!$this->country_code) {
             return null;
         }
-
         return "https://flagcdn.com/32x24/{$this->country_code}.png";
     }
 
     /**
-     * Check if this proxy is from ProxyIPV4 service.
-     *
-     * @return bool
+     * Scope a query to only include ProxyIPV4 proxies.
      */
-    public function isFromProxyIPV4(): bool
+    public function scopeFromProxyIPV4($query)
     {
-        return isset($this->metadata['source']) && $this->metadata['source'] === 'proxy_ipv4';
+        return $query->where('source', 'proxy_ipv4');
     }
 
     /**
-     * Get ProxyIPV4 specific data.
-     *
-     * @return array|null
+     * Scope a query to only include manually added proxies.
      */
-    public function getProxyIPV4Data(): ?array
+    public function scopeManuallyAdded($query)
     {
-        if (!$this->isFromProxyIPV4()) {
-            return null;
-        }
-
-        return [
-            'proxy_id' => $this->metadata['proxy_id'] ?? null,
-            'purchase_date' => $this->metadata['purchase_date'] ?? null,
-            'expiry_date' => $this->metadata['expiry_date'] ?? null,
-            'protocol' => $this->metadata['protocol'] ?? 'http',
-        ];
-    }
-
-    /**
-     * Get expiry date for ProxyIPV4 proxies.
-     *
-     * @return \Carbon\Carbon|null
-     */
-    public function getExpiryDate(): ?\Carbon\Carbon
-    {
-        $data = $this->getProxyIPV4Data();
-        if ($data && $data['expiry_date']) {
-            return \Carbon\Carbon::parse($data['expiry_date']);
-        }
-        return null;
-    }
-
-    /**
-     * Get purchase date for ProxyIPV4 proxies.
-     *
-     * @return \Carbon\Carbon|null
-     */
-    public function getPurchaseDate(): ?\Carbon\Carbon
-    {
-        $data = $this->getProxyIPV4Data();
-        if ($data && $data['purchase_date']) {
-            return \Carbon\Carbon::parse($data['purchase_date']);
-        }
-        return null;
-    }
-
-    /**
-     * Check if proxy is expired (for ProxyIPV4 proxies).
-     *
-     * @return bool
-     */
-    public function isExpired(): bool
-    {
-        $expiryDate = $this->getExpiryDate();
-        if (!$expiryDate) {
-            return false; // No expiry date means not expired
-        }
-        return $expiryDate->isPast();
-    }
-
-    /**
-     * Get days remaining until expiry.
-     *
-     * @return int|null
-     */
-    public function getDaysRemaining(): ?int
-    {
-        $expiryDate = $this->getExpiryDate();
-        if (!$expiryDate) {
-            return null;
-        }
-
-        if ($expiryDate->isPast()) {
-            return 0;
-        }
-
-        return now()->diffInDays($expiryDate);
-    }
-
-    /**
-     * Check if this proxy is currently in use by any email account.
-     *
-     * @return bool
-     */
-    public function isInUse(): bool
-    {
-        return $this->emailAccount()->exists();
-    }
-
-    /**
-     * Get the status badge color based on proxy status.
-     *
-     * @return string
-     */
-    public function getStatusBadgeColor(): string
-    {
-        if ($this->isFromProxyIPV4() && $this->isExpired()) {
-            return 'bg-gray-500'; // Expired
-        }
-
-        return match($this->validation_status) {
-            'valid' => 'bg-success',
-            'invalid' => 'bg-danger',
-            'pending' => 'bg-warning',
-            default => 'bg-gray-500',
-        };
+        return $query->where('source', 'manual');
     }
 
     /**
      * Scope a query to only include valid proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
      */
     public function scopeValid($query)
     {
@@ -287,9 +200,6 @@ class Proxy extends Model
 
     /**
      * Scope a query to only include invalid proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
      */
     public function scopeInvalid($query)
     {
@@ -298,9 +208,6 @@ class Proxy extends Model
 
     /**
      * Scope a query to only include pending proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
      */
     public function scopePending($query)
     {
@@ -308,80 +215,23 @@ class Proxy extends Model
     }
 
     /**
-     * Scope a query to only include ProxyIPV4 proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
+     * Override the boot method to handle soft delete unique constraint
      */
-    public function scopeFromProxyIPV4($query)
+    protected static function boot()
     {
-        return $query->where('metadata->source', 'proxy_ipv4');
-    }
+        parent::boot();
 
-    /**
-     * Scope a query to only include manually added proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
-     */
-    public function scopeManuallyAdded($query)
-    {
-        return $query->where(function($q) {
-            $q->whereNull('metadata')
-                ->orWhere('metadata->source', '!=', 'proxy_ipv4')
-                ->orWhereJsonDoesntContain('metadata', ['source' => 'proxy_ipv4']);
+        // When restoring a soft deleted proxy, we need to handle unique constraint
+        static::restoring(function ($proxy) {
+            // Check if there's already an active proxy with same IP:Port
+            $existing = static::where('ip_address', $proxy->ip_address)
+                ->where('port', $proxy->port)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existing) {
+                throw new \Exception('A proxy with this IP and port already exists.');
+            }
         });
-    }
-
-    /**
-     * Scope a query to only include non-expired ProxyIPV4 proxies.
-     *
-     * @param  Builder  $query
-     * @return Builder
-     */
-    public function scopeActive($query)
-    {
-        return $query->where(function($q) {
-            // Include all manually added proxies
-            $q->whereNull('metadata')
-                ->orWhereJsonDoesntContain('metadata->source', 'proxy_ipv4')
-                // Include non-expired ProxyIPV4 proxies
-                ->orWhere(function($subQ) {
-                    $subQ->whereJsonContains('metadata->source', 'proxy_ipv4')
-                        ->where(function($dateQ) {
-                            $dateQ->whereNull('metadata->expiry_date')
-                                ->orWhereRaw("STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.expiry_date')), '%Y-%m-%d %H:%i:%s') > NOW()");
-                        });
-                });
-        });
-    }
-
-    /**
-     * Scope a query to include proxies that need validation
-     * (either pending or validated more than 24 hours ago).
-     *
-     * @param  Builder  $query
-     * @return Builder
-     */
-    public function scopeNeedsValidation($query)
-    {
-        return $query->where('validation_status', 'pending')
-            ->orWhere(function ($query) {
-                $query->where('last_validation_date', '<', now()->subDay());
-            });
-    }
-
-    /**
-     * Get the ProxyIPV4 ID from metadata.
-     *
-     * @return string|null
-     */
-    public function getProxyIPV4Id(): ?string
-    {
-        if (!$this->metadata || !isset($this->metadata['source']) || $this->metadata['source'] !== 'proxy_ipv4') {
-            return null;
-        }
-
-        return $this->metadata['proxy_id'] ?? null;
     }
 }

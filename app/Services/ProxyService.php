@@ -154,6 +154,11 @@ class ProxyService
      */
     public function create(array $data): Proxy
     {
+        // Ensure source is set to manual if not specified
+        if (!isset($data['source'])) {
+            $data['source'] = 'manual';
+        }
+
         return Proxy::create($data);
     }
 

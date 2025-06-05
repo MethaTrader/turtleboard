@@ -219,9 +219,12 @@ class ProxyIPV4Service
         $purchaseDate = isset($proxy['dateStart']) ? Carbon::parse($proxy['dateStart']) : null;
         $expiryDate = isset($proxy['dateEnd']) ? Carbon::parse($proxy['dateEnd']) : null;
 
-        // Get country information
+        // Get country information and fix country code
         $countryCode = $proxy['country'] ?? null;
         $country = $this->getCountryName($countryCode);
+
+        // Convert 3-letter country codes to 2-letter codes for flags
+        $flagCountryCode = $this->convertCountryCodeToTwoLetter($countryCode);
 
         return [
             'id' => $proxy['id'] ?? null,
@@ -231,7 +234,7 @@ class ProxyIPV4Service
             'username' => $username,
             'password' => $password,
             'country' => $country,
-            'country_code' => $countryCode ? strtolower(substr($countryCode, 0, 3)) : null,
+            'country_code' => $flagCountryCode, // Use 2-letter code for compatibility
             'city' => null, // Not provided in API
             'purchase_date' => $purchaseDate,
             'expiry_date' => $expiryDate,
@@ -246,6 +249,58 @@ class ProxyIPV4Service
             'reboot_link' => $proxy['rebootLink'] ?? null,
             'raw_data' => $proxy // Keep original data for reference
         ];
+    }
+
+    /**
+     * Convert 3-letter country codes to 2-letter codes for flag compatibility
+     *
+     * @param string|null $countryCode
+     * @return string|null
+     */
+    protected function convertCountryCodeToTwoLetter($countryCode)
+    {
+        if (!$countryCode) {
+            return null;
+        }
+
+        $mapping = [
+            'CZE' => 'cz',
+            'GBR' => 'gb',
+            'USA' => 'us',
+            'FRA' => 'fr',
+            'DEU' => 'de',
+            'RUS' => 'ru',
+            'CHN' => 'cn',
+            'JPN' => 'jp',
+            'CAN' => 'ca',
+            'AUS' => 'au',
+            'BRA' => 'br',
+            'IND' => 'in',
+            'ITA' => 'it',
+            'ESP' => 'es',
+            'NLD' => 'nl',
+            'BEL' => 'be',
+            'CHE' => 'ch',
+            'AUT' => 'at',
+            'POL' => 'pl',
+            'SWE' => 'se',
+            'NOR' => 'no',
+            'DNK' => 'dk',
+            'FIN' => 'fi',
+            'UKR' => 'ua',
+            'HUN' => 'hu',
+            'ROU' => 'ro',
+            'BGR' => 'bg',
+            'HRV' => 'hr',
+            'SRB' => 'rs',
+            'SVN' => 'si',
+            'SVK' => 'sk',
+            'EST' => 'ee',
+            'LVA' => 'lv',
+            'LTU' => 'lt',
+        ];
+
+        return $mapping[strtoupper($countryCode)] ?? strtolower(substr($countryCode, 0, 2));
     }
 
     // In ProxyIPV4Service, add this method
@@ -400,15 +455,40 @@ class ProxyIPV4Service
     public function importProxy($proxyData, $userId)
     {
         try {
-            // Check if proxy already exists
-            $existingProxy = \App\Models\Proxy::where('ip_address', $proxyData['ip_address'])
+            // Check if proxy already exists (including soft deleted)
+            $existingProxy = \App\Models\Proxy::withTrashed()
+                ->where('ip_address', $proxyData['ip_address'])
                 ->where('port', $proxyData['port'])
                 ->first();
 
-            if ($existingProxy) {
+            if ($existingProxy && !$existingProxy->trashed()) {
                 return [
                     'success' => false,
                     'message' => 'Proxy already exists in local database'
+                ];
+            }
+
+            if ($existingProxy && $existingProxy->trashed()) {
+                // Restore and update the soft deleted proxy
+                $existingProxy->restore();
+                $existingProxy->update([
+                    'source' => 'proxy_ipv4',
+                    'proxy_ipv4_id' => $proxyData['id'],
+                    'username' => $proxyData['username'],
+                    'password' => $proxyData['password'],
+                    'purchase_date' => $proxyData['purchase_date'],
+                    'expiry_date' => $proxyData['expiry_date'],
+                    'protocol' => $proxyData['protocol'],
+                    'geolocation' => $proxyData['country'],
+                    'country_code' => $proxyData['country_code'],
+                    'validation_status' => 'pending',
+                    'user_id' => $userId,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Proxy restored and imported successfully',
+                    'proxy' => $existingProxy
                 ];
             }
 
@@ -418,18 +498,15 @@ class ProxyIPV4Service
                 'port' => $proxyData['port'],
                 'username' => $proxyData['username'],
                 'password' => $proxyData['password'],
-                'user_id' => $userId,
-                'validation_status' => 'pending',
-                'geolocation' => ($proxyData['country'] ?? '') . ($proxyData['city'] ? ', ' . $proxyData['city'] : ''),
+                'source' => 'proxy_ipv4',
+                'proxy_ipv4_id' => $proxyData['id'],
+                'purchase_date' => $proxyData['purchase_date'],
+                'expiry_date' => $proxyData['expiry_date'],
+                'protocol' => $proxyData['protocol'],
+                'geolocation' => $proxyData['country'],
                 'country_code' => $proxyData['country_code'],
-                // Add ProxyIPV4 specific metadata
-                'metadata' => json_encode([
-                    'source' => 'proxy_ipv4',
-                    'proxy_id' => $proxyData['id'],
-                    'purchase_date' => $proxyData['purchase_date']?->toDateTimeString(),
-                    'expiry_date' => $proxyData['expiry_date']?->toDateTimeString(),
-                    'protocol' => $proxyData['protocol'],
-                ])
+                'validation_status' => 'pending',
+                'user_id' => $userId,
             ]);
 
             return [

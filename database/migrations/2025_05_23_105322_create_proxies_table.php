@@ -21,14 +21,19 @@ return new class extends Migration
             $table->string('validation_status')->default('pending');
             $table->integer('response_time')->nullable(); // in milliseconds
             $table->string('geolocation')->nullable();
-            $table->string('country_code', 3)->nullable(); // Change from 2 to 3 characters
+
+            $table->string('source')->default('manual'); // 'manual' or 'proxy_ipv4'
+            $table->string('proxy_ipv4_id')->nullable(); // ProxyIPV4 ID
+            $table->timestamp('purchase_date')->nullable();
+            $table->timestamp('expiry_date')->nullable();
+            $table->string('protocol')->nullable(); // HTTP/HTTPS, SOCKS5, etc.
+            $table->string('country_code')->nullable();
+
             $table->json('metadata')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
 
-            // Add unique constraint on IP and port
-            $table->unique(['ip_address', 'port']);
         });
 
         // Add foreign key to email_accounts table after proxies table exists

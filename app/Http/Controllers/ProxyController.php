@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/ProxyController.php
 
 namespace App\Http\Controllers;
 
@@ -26,7 +25,7 @@ class ProxyController extends Controller
     }
 
     /**
-     * Display a listing of the proxies with ProxyIPV4 integration.
+     * Display a listing of the proxies.
      */
     public function index(Request $request): View
     {
@@ -40,9 +39,9 @@ class ProxyController extends Controller
         // Filter by source (manual vs ProxyIPV4)
         if ($request->has('source')) {
             if ($request->source === 'manual') {
-                $query->manuallyAdded();
+                $query->where('source', 'manual');
             } elseif ($request->source === 'proxy_ipv4') {
-                $query->fromProxyIPV4();
+                $query->where('source', 'proxy_ipv4');
             }
         }
 
@@ -54,20 +53,16 @@ class ProxyController extends Controller
             });
         }
 
-        // Default sorting by newest first
         $query->orderBy($request->get('sort', 'created_at'), $request->get('direction', 'desc'));
-
         $proxies = $query->with('emailAccount')->paginate(15);
 
-// Calculate status counts
+        // Calculate simple statistics
         $totalProxies = Proxy::count();
         $validCount = Proxy::where('validation_status', 'valid')->count();
         $invalidCount = Proxy::where('validation_status', 'invalid')->count();
         $pendingCount = Proxy::where('validation_status', 'pending')->count();
-
-// Simple count queries
-        $proxyIPV4Count = Proxy::where('metadata->source', 'proxy_ipv4')->count();
-        $manualCount = $totalProxies - $proxyIPV4Count;
+        $proxyIPV4Count = Proxy::where('source', 'proxy_ipv4')->count();
+        $manualCount = Proxy::where('source', 'manual')->count();
 
         return view('proxies.index', [
             'proxies' => $proxies,
@@ -94,57 +89,27 @@ class ProxyController extends Controller
                 'proxyIPV4Data' => $proxyIPV4Data,
                 'proxies' => [],
                 'filters' => $request->only(['filter', 'sort']),
-                'stats' => [
-                    'total' => 0,
-                    'available' => 0,
-                    'imported' => 0,
-                    'used' => 0,
-                    'expired' => 0,
-                    'expiring_soon' => 0,
-                ]
+                'stats' => array_fill_keys(['total', 'available', 'imported', 'used', 'expired', 'expiring_soon'], 0)
             ]);
         }
 
-        // Get all imported ProxyIPV4 proxies with their relationships
-        $importedProxies = Proxy::where('metadata->source', 'proxy_ipv4')
+        // Get all imported ProxyIPV4 proxies
+        $importedProxies = Proxy::where('source', 'proxy_ipv4')
             ->with(['emailAccount.user'])
-            ->get();
-
-        // Create a simple mapping array
-        $importedMap = [];
-        foreach ($importedProxies as $proxy) {
-            $proxyIPV4Id = $proxy->getProxyIPV4Id();
-            if ($proxyIPV4Id) {
-                $importedMap[$proxyIPV4Id] = [
-                    'proxy' => $proxy,
-                    'is_used' => $proxy->isInUse(),
-                    'used_by' => $proxy->emailAccount ? $proxy->emailAccount->email_address : null,
-                    'used_by_user' => $proxy->emailAccount && $proxy->emailAccount->user ? $proxy->emailAccount->user->name : null,
-                ];
-            }
-        }
+            ->get()
+            ->keyBy('proxy_ipv4_id');
 
         // Process each ProxyIPV4 proxy
         $proxies = [];
         foreach ($proxyIPV4Data['proxies'] as $proxy) {
             $proxyId = $proxy['id'] ?? null;
+            $imported = $importedProxies->get($proxyId);
 
-            // Check if this proxy is imported
-            $isImported = isset($importedMap[$proxyId]);
-
-            $proxy['is_imported'] = $isImported;
-            $proxy['is_used'] = false;
-            $proxy['used_by'] = null;
-            $proxy['used_by_user'] = null;
-            $proxy['local_proxy'] = null;
-
-            if ($isImported) {
-                $importedData = $importedMap[$proxyId];
-                $proxy['is_used'] = $importedData['is_used'];
-                $proxy['used_by'] = $importedData['used_by'];
-                $proxy['used_by_user'] = $importedData['used_by_user'];
-                $proxy['local_proxy'] = $importedData['proxy'];
-            }
+            $proxy['is_imported'] = $imported !== null;
+            $proxy['is_used'] = $imported ? $imported->isInUse() : false;
+            $proxy['used_by'] = $imported && $imported->emailAccount ? $imported->emailAccount->email_address : null;
+            $proxy['used_by_user'] = $imported && $imported->emailAccount && $imported->emailAccount->user ? $imported->emailAccount->user->name : null;
+            $proxy['local_proxy'] = $imported;
 
             $proxies[] = $proxy;
         }
@@ -184,14 +149,14 @@ class ProxyController extends Controller
 
         foreach ($allProxies as $proxy) {
             $proxyId = $proxy['id'] ?? null;
-            $isImported = isset($importedMap[$proxyId]);
+            $imported = $importedProxies->get($proxyId);
 
-            if (!$isImported && ($proxy['is_active'] ?? false)) {
+            if (!$imported && ($proxy['is_active'] ?? false)) {
                 $stats['available']++;
             }
-            if ($isImported) {
+            if ($imported) {
                 $stats['imported']++;
-                if ($importedMap[$proxyId]['is_used']) {
+                if ($imported->isInUse()) {
                     $stats['used']++;
                 }
             }
@@ -206,12 +171,11 @@ class ProxyController extends Controller
 
         return view('proxies.proxy-ipv4', [
             'proxyIPV4Data' => $proxyIPV4Data,
-            'proxies' => array_values($proxies), // Re-index array
+            'proxies' => array_values($proxies),
             'filters' => $request->only(['filter', 'sort']),
             'stats' => $stats
         ]);
     }
-
 
     /**
      * Import a ProxyIPV4 proxy to local database.
@@ -222,17 +186,6 @@ class ProxyController extends Controller
             'proxy_id' => 'required|string',
         ]);
 
-        // Get proxy details from ProxyIPV4 service
-        $proxyDetails = $this->proxyIPV4Service->getProxyDetails($request->proxy_id);
-
-        if (!$proxyDetails['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get proxy details from ProxyIPV4'
-            ]);
-        }
-
-        // Get all purchased proxies to find the one we want to import
         $purchasedProxies = $this->proxyIPV4Service->getPurchasedProxies();
 
         if (!$purchasedProxies['success']) {
@@ -242,7 +195,6 @@ class ProxyController extends Controller
             ]);
         }
 
-        // Find the specific proxy
         $proxyToImport = collect($purchasedProxies['proxies'])->firstWhere('id', $request->proxy_id);
 
         if (!$proxyToImport) {
@@ -252,10 +204,68 @@ class ProxyController extends Controller
             ]);
         }
 
-        // Import the proxy
-        $result = $this->proxyIPV4Service->importProxy($proxyToImport, Auth::id());
+        try {
+            // Check if proxy already exists (including soft deleted)
+            $existing = Proxy::withTrashed()
+                ->where('ip_address', $proxyToImport['ip_address'])
+                ->where('port', $proxyToImport['port'])
+                ->first();
 
-        return response()->json($result);
+            if ($existing && !$existing->trashed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Proxy already exists in local database'
+                ]);
+            }
+
+            $dataToInsert = [
+                'ip_address' => $proxyToImport['ip_address'],
+                'port' => $proxyToImport['port'],
+                'username' => $proxyToImport['username'] ?? null,
+                'password' => $proxyToImport['password'] ?? null,
+                'source' => 'proxy_ipv4',
+                'proxy_ipv4_id' => $proxyToImport['id'],
+                'purchase_date' => $proxyToImport['purchase_date'] ?? null,
+                'expiry_date' => $proxyToImport['expiry_date'] ?? null,
+                'protocol' => $proxyToImport['protocol'] ?? 'HTTP/HTTPS',
+                'geolocation' => $proxyToImport['country'] ?? null,
+                'country_code' => $proxyToImport['country_code'] ?? null,
+                'validation_status' => 'pending',
+                'user_id' => Auth::id(),
+            ];
+
+            if ($existing && $existing->trashed()) {
+                // Restore the soft deleted proxy and update it
+                $existing->restore();
+                $existing->update($dataToInsert);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Proxy restored and imported successfully',
+                    'proxy' => $existing
+                ]);
+            }
+
+            // Create new proxy
+            $proxy = Proxy::create($dataToInsert);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proxy imported successfully',
+                'proxy' => $proxy
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('ProxyIPV4 Import Error: ' . $e->getMessage(), [
+                'proxy_data' => $proxyToImport,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Import error: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -296,7 +306,6 @@ class ProxyController extends Controller
     public function store(ProxyRequest $request)
     {
         try {
-            // Parse proxies from text input or file
             $proxies = $this->proxyService->parseProxies(
                 $request->input('proxy_list'),
                 $request->file('proxy_file')
@@ -306,12 +315,13 @@ class ProxyController extends Controller
                 return back()->with('error', 'No valid proxies found. Please check the format (IP:PORT:USERNAME:PASSWORD).');
             }
 
-            // Create proxies in the database
             $created = 0;
             $errors = [];
 
             foreach ($proxies as $proxyData) {
                 try {
+                    // Add source as manual for manually added proxies
+                    $proxyData['source'] = 'manual';
                     $this->proxyService->create($proxyData);
                     $created++;
                 } catch (\Exception $e) {
@@ -320,7 +330,6 @@ class ProxyController extends Controller
             }
 
             $message = "Successfully added {$created} proxies.";
-
             if (!empty($errors)) {
                 $message .= " Failed to add " . count($errors) . " proxies.";
                 return redirect()->route('accounts.proxy')->with('warning', $message);

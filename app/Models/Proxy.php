@@ -315,7 +315,7 @@ class Proxy extends Model
      */
     public function scopeFromProxyIPV4($query)
     {
-        return $query->whereJsonContains('metadata->source', 'proxy_ipv4');
+        return $query->where('metadata->source', 'proxy_ipv4');
     }
 
     /**
@@ -328,7 +328,8 @@ class Proxy extends Model
     {
         return $query->where(function($q) {
             $q->whereNull('metadata')
-                ->orWhereJsonDoesntContain('metadata->source', 'proxy_ipv4');
+                ->orWhere('metadata->source', '!=', 'proxy_ipv4')
+                ->orWhereJsonDoesntContain('metadata', ['source' => 'proxy_ipv4']);
         });
     }
 
@@ -368,5 +369,19 @@ class Proxy extends Model
             ->orWhere(function ($query) {
                 $query->where('last_validation_date', '<', now()->subDay());
             });
+    }
+
+    /**
+     * Get the ProxyIPV4 ID from metadata.
+     *
+     * @return string|null
+     */
+    public function getProxyIPV4Id(): ?string
+    {
+        if (!$this->metadata || !isset($this->metadata['source']) || $this->metadata['source'] !== 'proxy_ipv4') {
+            return null;
+        }
+
+        return $this->metadata['proxy_id'] ?? null;
     }
 }

@@ -203,25 +203,16 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <!-- NEW: Source Column -->
+                                    <!-- Source Column -->
                                     <td class="px-4 py-4 whitespace-nowrap">
-                                        @if($proxy->isFromProxyIPV4())
+                                        @if($proxy->metadata && isset($proxy->metadata['source']) && $proxy->metadata['source'] === 'proxy_ipv4')
                                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
-                                                <i class="fas fa-cloud mr-1"></i> ProxyIPV4
-                                            </span>
-                                            @if($proxy->isExpired())
-                                                <br><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 mt-1">
-                                                    <i class="fas fa-clock mr-1"></i> Expired
-                                                </span>
-                                            @elseif($proxy->getDaysRemaining() !== null && $proxy->getDaysRemaining() <= 7)
-                                                <br><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800 mt-1">
-                                                    <i class="fas fa-exclamation-triangle mr-1"></i> {{ $proxy->getDaysRemaining() }}d left
-                                                </span>
-                                            @endif
+            <i class="fas fa-cloud mr-1"></i> ProxyIPV4
+        </span>
                                         @else
                                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                                <i class="fas fa-hand-paper mr-1"></i> Manual
-                                            </span>
+            <i class="fas fa-hand-paper mr-1"></i> Manual
+        </span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap">

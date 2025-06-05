@@ -94,24 +94,11 @@
         @if($proxyIPV4Data['success'] && !empty($proxies))
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 @foreach($proxies as $proxy)
-                    <div class="proxy-card bg-card rounded-card shadow-card transition-all duration-300 hover:shadow-card-hover overflow-hidden
-                        {{ $proxy['is_imported'] ? 'border-l-4 border-purple-500' : '' }}
-                        {{ isset($proxy['days_remaining']) && $proxy['days_remaining'] <= 7 && $proxy['days_remaining'] > 0 ? 'border-l-4 border-orange-500' : '' }}
-                        {{ isset($proxy['days_remaining']) && $proxy['days_remaining'] === 0 ? 'border-l-4 border-red-500 opacity-75' : '' }}">
+                    <div class="proxy-card bg-card rounded-card shadow-card transition-all duration-300 hover:shadow-card-hover overflow-hidden">
 
-                        <!-- Status indicator dot at top-right corner -->
-                        <div class="absolute top-2 right-2">
-                            @if(isset($proxy['is_used']) && $proxy['is_used'])
-                                <span class="w-3 h-3 bg-yellow-500 rounded-full inline-block animate-pulse"
-                                      title="In use by: {{ $proxy['used_by'] ?? 'Unknown' }}"></span>
-                            @elseif($proxy['is_imported'])
-                                <span class="w-3 h-3 bg-purple-500 rounded-full inline-block"
-                                      title="Imported but not in use"></span>
-                            @endif
-                        </div>
-
-                        <!-- Header with Flag and Country -->
-                        <div class="p-4 pb-0">
+                        <!-- Header with Status Indicators -->
+                        <div class="p-4">
+                            <!-- Country and Status -->
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center space-x-2">
                                     @if(isset($proxy['country_code']) && $proxy['country_code'])
@@ -124,32 +111,22 @@
                                 </div>
 
                                 <!-- Status Badges -->
-                                <div class="flex space-x-1">
-                                    @if(isset($proxy['is_imported']) && $proxy['is_imported'])
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                                            <i class="fas fa-download mr-1"></i>Imported
-                                        </span>
+                                <div class="flex flex-wrap gap-1">
+                                    @if($proxy['is_imported'])
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                            <i class="fas fa-download mr-1"></i>Imported
+                        </span>
                                     @endif
 
-                                    @if(isset($proxy['is_used']) && $proxy['is_used'])
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200 animate-pulse">
-                                            <i class="fas fa-user mr-1"></i>In Use
-                                        </span>
-                                    @endif
-
-                                    @if(isset($proxy['days_remaining']) && $proxy['days_remaining'] === 0)
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 border border-red-200">
-                                            <i class="fas fa-clock mr-1"></i>Expired
-                                        </span>
-                                    @elseif(isset($proxy['days_remaining']) && $proxy['days_remaining'] <= 7 && $proxy['days_remaining'] > 0)
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 border border-orange-200">
-                                            <i class="fas fa-exclamation-triangle mr-1"></i>Expiring
-                                        </span>
+                                    @if($proxy['is_used'])
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-user mr-1"></i>In Use
+                        </span>
                                     @endif
                                 </div>
                             </div>
 
-                            <!-- IP Address and Port -->
+                            <!-- IP and Port -->
                             <div class="mb-3">
                                 <div class="flex items-center justify-between">
                                     <div class="font-mono text-text-primary font-semibold">
@@ -161,105 +138,76 @@
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </div>
-
-                                @if(isset($proxy['city']) && $proxy['city'])
-                                    <div class="text-sm text-text-secondary">{{ $proxy['city'] }}</div>
-                                @endif
                             </div>
 
-                            <!-- Authentication Data -->
-                            @if(isset($proxy['username']) && $proxy['username'] && isset($proxy['password']) && $proxy['password'])
+                            <!-- Authentication -->
+                            @if(isset($proxy['username']) && $proxy['username'])
                                 <div class="mb-3 p-3 bg-gray-50 rounded-lg">
                                     <div class="text-xs text-text-secondary mb-1">Authentication</div>
-                                    <div class="flex items-center justify-between text-sm">
-                                        <div class="font-mono">
-                                            <div>{{ $proxy['username'] }}</div>
-                                            <div id="password-{{ $proxy['id'] }}" class="text-gray-400">••••••••</div>
-                                        </div>
-                                        <div class="flex space-x-1">
-                                            <button onclick="togglePassword('{{ $proxy['id'] }}', '{{ $proxy['password'] }}')"
-                                                    class="text-secondary hover:text-secondary/80 transition-colors p-1"
-                                                    title="Show/Hide Password">
-                                                <i class="fas fa-eye text-xs" id="eye-{{ $proxy['id'] }}"></i>
-                                            </button>
-                                            <button onclick="copyToClipboard('{{ $proxy['username'] }}:{{ $proxy['password'] }}')"
-                                                    class="text-secondary hover:text-secondary/80 transition-colors p-1"
-                                                    title="Copy Credentials">
-                                                <i class="fas fa-copy text-xs"></i>
-                                            </button>
-                                        </div>
+                                    <div class="font-mono text-sm">
+                                        <div>{{ $proxy['username'] }}</div>
+                                        <div>{{ $proxy['password'] ?? '••••••••' }}</div>
                                     </div>
                                 </div>
                             @endif
 
-                            <!-- Dates Information -->
-                            <div class="grid grid-cols-2 gap-3 text-xs text-text-secondary mb-4">
-                                @if(isset($proxy['purchase_date']) && $proxy['purchase_date'])
-                                    <div>
-                                        <div class="font-medium text-text-primary">Purchased</div>
-                                        <div>{{ $proxy['purchase_date']->format('M d, Y') }}</div>
-                                    </div>
-                                @endif
-
-                                @if(isset($proxy['expiry_date']) && $proxy['expiry_date'])
-                                    <div>
-                                        <div class="font-medium text-text-primary">Expires</div>
-                                        <div class="{{ isset($proxy['days_remaining']) && $proxy['days_remaining'] <= 7 ? 'text-orange-600 font-medium' : '' }}">
-                                            {{ $proxy['expiry_date']->format('M d, Y') }}
-                                            @if(isset($proxy['days_remaining']))
-                                                <br><span class="text-xs">({{ $proxy['days_remaining'] }} days)</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <!-- Usage Information - Enhanced and more visible -->
-                            @if(isset($proxy['is_imported']) && $proxy['is_imported'] && isset($proxy['used_by']) && $proxy['used_by'])
-                                <div class="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-user-circle text-yellow-600 text-lg mr-2"></i>
-                                        <div>
-                                            <div class="font-medium text-yellow-800">Currently used by:</div>
-                                            <div class="text-yellow-700">{{ $proxy['used_by'] }}</div>
-                                            @if(isset($proxy['used_by_user']))
-                                                <div class="text-xs text-yellow-600 mt-1">
-                                                    <i class="fas fa-id-badge mr-1"></i> Added by: {{ $proxy['used_by_user'] }}
-                                                </div>
+                            <!-- Usage Information - ENHANCED -->
+                            @if($proxy['is_imported'])
+                                <div class="mb-4 p-3 rounded-md {{ $proxy['is_used'] ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-purple-50 border-l-4 border-purple-500' }}">
+                                    <div class="flex items-start">
+                                        <i class="fas {{ $proxy['is_used'] ? 'fa-user-circle text-yellow-600' : 'fa-download text-purple-600' }} text-lg mr-2 mt-0.5"></i>
+                                        <div class="flex-1">
+                                            @if($proxy['is_used'])
+                                                <div class="font-medium text-yellow-800">Currently in use</div>
+                                                @if($proxy['used_by'])
+                                                    <div class="text-yellow-700 font-medium">{{ $proxy['used_by'] }}</div>
+                                                @endif
+                                                @if($proxy['used_by_user'])
+                                                    <div class="text-xs text-yellow-600 mt-1 flex items-center">
+                                                        <i class="fas fa-user-tag mr-1"></i>
+                                                        Manager: <span class="font-medium ml-1">{{ $proxy['used_by_user'] }}</span>
+                                                    </div>
+                                                @endif
+                                            @else
+                                                <div class="font-medium text-purple-800">Imported but not in use</div>
+                                                <div class="text-xs text-purple-600 mt-1">Available for email accounts</div>
                                             @endif
                                         </div>
                                     </div>
                                 </div>
                             @endif
-                        </div>
 
-                        <!-- Action Buttons -->
-                        <div class="p-4 pt-0">
-                            @if((!isset($proxy['is_imported']) || !$proxy['is_imported']) && (isset($proxy['is_active']) && $proxy['is_active']) && (!isset($proxy['days_remaining']) || $proxy['days_remaining'] !== 0))
+                            <!-- Dates -->
+                            @if(isset($proxy['expiry_date']) && $proxy['expiry_date'])
+                                <div class="text-xs text-text-secondary mb-4">
+                                    <div>Expires: {{ $proxy['expiry_date']->format('M d, Y') }}</div>
+                                    @if(isset($proxy['days_remaining']))
+                                        <div>({{ $proxy['days_remaining'] }} days remaining)</div>
+                                    @endif
+                                </div>
+                            @endif
+
+                            <!-- Action Button -->
+                            @if(!$proxy['is_imported'] && ($proxy['is_active'] ?? false))
                                 <button onclick="importProxy('{{ $proxy['id'] }}')"
                                         class="w-full bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-button text-sm font-medium transition-colors">
                                     <i class="fas fa-download mr-2"></i>Import to Project
                                 </button>
-                            @elseif(isset($proxy['is_imported']) && $proxy['is_imported'])
+                            @elseif($proxy['is_imported'])
                                 <div class="flex space-x-2">
-                                    <a href="{{ isset($proxy['local_proxy']) && $proxy['local_proxy'] ? route('accounts.proxy.edit', $proxy['local_proxy']->id) : '#' }}"
-                                       class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-button text-sm font-medium text-center transition-colors {{ !isset($proxy['local_proxy']) ? 'opacity-50 cursor-not-allowed' : '' }}">
-                                        <i class="fas fa-edit mr-1"></i>Edit
-                                    </a>
-                                    <button onclick="validateProxy({{ isset($proxy['local_proxy']) && $proxy['local_proxy'] ? $proxy['local_proxy']->id : 0 }})"
-                                            class="flex-1 bg-success hover:bg-success/90 text-white py-2 px-4 rounded-button text-sm font-medium transition-colors {{ !isset($proxy['local_proxy']) ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                            {{ !isset($proxy['local_proxy']) ? 'disabled' : '' }}>
-                                        <i class="fas fa-check mr-1"></i>Validate
+                                    @if($proxy['local_proxy'])
+                                        <a href="{{ route('accounts.proxy.edit', $proxy['local_proxy']->id) }}"
+                                           class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-button text-sm font-medium text-center transition-colors">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </a>
+                                    @endif
+                                    <button class="flex-1 bg-gray-300 text-gray-600 py-2 px-4 rounded-button text-sm font-medium">
+                                        <i class="fas fa-check mr-1"></i>Imported
                                     </button>
                                 </div>
                             @else
-                                <button disabled
-                                        class="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-button text-sm font-medium cursor-not-allowed">
-                                    @if(isset($proxy['days_remaining']) && $proxy['days_remaining'] === 0)
-                                        <i class="fas fa-times mr-2"></i>Expired
-                                    @else
-                                        <i class="fas fa-ban mr-2"></i>Inactive
-                                    @endif
+                                <button disabled class="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-button text-sm font-medium cursor-not-allowed">
+                                    <i class="fas fa-ban mr-2"></i>Not Available
                                 </button>
                             @endif
                         </div>

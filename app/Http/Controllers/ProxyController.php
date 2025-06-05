@@ -59,13 +59,15 @@ class ProxyController extends Controller
 
         $proxies = $query->with('emailAccount')->paginate(15);
 
-        // Calculate status counts
+// Calculate status counts
         $totalProxies = Proxy::count();
         $validCount = Proxy::where('validation_status', 'valid')->count();
         $invalidCount = Proxy::where('validation_status', 'invalid')->count();
         $pendingCount = Proxy::where('validation_status', 'pending')->count();
-        $proxyIPV4Count = Proxy::fromProxyIPV4()->count();
-        $manualCount = Proxy::manuallyAdded()->count();
+
+// Simple count queries
+        $proxyIPV4Count = Proxy::where('metadata->source', 'proxy_ipv4')->count();
+        $manualCount = $totalProxies - $proxyIPV4Count;
 
         return view('proxies.index', [
             'proxies' => $proxies,
@@ -87,89 +89,129 @@ class ProxyController extends Controller
         // Get purchased proxies from ProxyIPV4 service
         $proxyIPV4Data = $this->proxyIPV4Service->getPurchasedProxies();
 
-        // Get already imported proxies to mark them as used
-        $importedProxies = Proxy::fromProxyIPV4()->with(['emailAccount', 'emailAccount.user'])->get();
-        $importedProxyIds = $importedProxies->pluck('metadata.proxy_id')->filter()->toArray();
+        if (!$proxyIPV4Data['success']) {
+            return view('proxies.proxy-ipv4', [
+                'proxyIPV4Data' => $proxyIPV4Data,
+                'proxies' => [],
+                'filters' => $request->only(['filter', 'sort']),
+                'stats' => [
+                    'total' => 0,
+                    'available' => 0,
+                    'imported' => 0,
+                    'used' => 0,
+                    'expired' => 0,
+                    'expiring_soon' => 0,
+                ]
+            ]);
+        }
 
-        // Mark used proxies and get usage information
-        if ($proxyIPV4Data['success'] && isset($proxyIPV4Data['proxies'])) {
-            foreach ($proxyIPV4Data['proxies'] as &$proxy) {
-                // Check if proxy is already imported
-                $proxy['is_imported'] = in_array($proxy['id'] ?? null, $importedProxyIds);
+        // Get all imported ProxyIPV4 proxies with their relationships
+        $importedProxies = Proxy::where('metadata->source', 'proxy_ipv4')
+            ->with(['emailAccount.user'])
+            ->get();
 
-                // If imported, get usage info from local database
-                if ($proxy['is_imported']) {
-                    $localProxy = $importedProxies->firstWhere('metadata.proxy_id', $proxy['id']);
-                    if ($localProxy) {
-                        $proxy['is_used'] = $localProxy->isInUse();
-                        $proxy['local_proxy'] = $localProxy;
-
-                        if ($localProxy->emailAccount) {
-                            $proxy['used_by'] = $localProxy->emailAccount->email_address;
-
-                            // Add the user who created/owns the email account
-                            if ($localProxy->emailAccount->user) {
-                                $proxy['used_by_user'] = $localProxy->emailAccount->user->name;
-                            }
-                        }
-                    }
-                }
+        // Create a simple mapping array
+        $importedMap = [];
+        foreach ($importedProxies as $proxy) {
+            $proxyIPV4Id = $proxy->getProxyIPV4Id();
+            if ($proxyIPV4Id) {
+                $importedMap[$proxyIPV4Id] = [
+                    'proxy' => $proxy,
+                    'is_used' => $proxy->isInUse(),
+                    'used_by' => $proxy->emailAccount ? $proxy->emailAccount->email_address : null,
+                    'used_by_user' => $proxy->emailAccount && $proxy->emailAccount->user ? $proxy->emailAccount->user->name : null,
+                ];
             }
         }
 
-        // Filter by status if requested
-        $filteredProxies = $proxyIPV4Data['proxies'] ?? [];
+        // Process each ProxyIPV4 proxy
+        $proxies = [];
+        foreach ($proxyIPV4Data['proxies'] as $proxy) {
+            $proxyId = $proxy['id'] ?? null;
+
+            // Check if this proxy is imported
+            $isImported = isset($importedMap[$proxyId]);
+
+            $proxy['is_imported'] = $isImported;
+            $proxy['is_used'] = false;
+            $proxy['used_by'] = null;
+            $proxy['used_by_user'] = null;
+            $proxy['local_proxy'] = null;
+
+            if ($isImported) {
+                $importedData = $importedMap[$proxyId];
+                $proxy['is_used'] = $importedData['is_used'];
+                $proxy['used_by'] = $importedData['used_by'];
+                $proxy['used_by_user'] = $importedData['used_by_user'];
+                $proxy['local_proxy'] = $importedData['proxy'];
+            }
+
+            $proxies[] = $proxy;
+        }
+
+        // Apply filters
         if ($request->has('filter')) {
             $filter = $request->input('filter');
-            $filteredProxies = array_filter($filteredProxies, function ($proxy) use ($filter) {
+            $proxies = array_filter($proxies, function ($proxy) use ($filter) {
                 switch ($filter) {
                     case 'available':
-                        return !($proxy['is_imported'] ?? false) && ($proxy['is_active'] ?? false);
+                        return !$proxy['is_imported'] && ($proxy['is_active'] ?? false);
                     case 'imported':
-                        return $proxy['is_imported'] ?? false;
+                        return $proxy['is_imported'];
                     case 'used':
-                        return ($proxy['is_imported'] ?? false) && ($proxy['is_used'] ?? false);
+                        return $proxy['is_imported'] && $proxy['is_used'];
                     case 'expired':
                         return ($proxy['days_remaining'] ?? null) === 0;
                     case 'expiring_soon':
-                        return ($proxy['days_remaining'] ?? null) !== null && ($proxy['days_remaining'] ?? 0) <= 7 && ($proxy['days_remaining'] ?? 0) > 0;
+                        $days = $proxy['days_remaining'] ?? null;
+                        return $days !== null && $days <= 7 && $days > 0;
                     default:
                         return true;
                 }
             });
         }
 
-        // Sort by expiry date or other criteria
-        $sortBy = $request->input('sort', 'expiry_date');
-        usort($filteredProxies, function ($a, $b) use ($sortBy) {
-            switch ($sortBy) {
-                case 'expiry_date':
-                    $aDate = isset($a['expiry_date']) ? $a['expiry_date']->timestamp : PHP_INT_MAX;
-                    $bDate = isset($b['expiry_date']) ? $b['expiry_date']->timestamp : PHP_INT_MAX;
-                    return $aDate <=> $bDate;
-                case 'country':
-                    return strcasecmp($a['country'] ?? '', $b['country'] ?? '');
-                case 'status':
-                    return ($b['is_active'] ?? false) <=> ($a['is_active'] ?? false);
-                default:
-                    return 0;
+        // Calculate statistics
+        $allProxies = $proxyIPV4Data['proxies'];
+        $stats = [
+            'total' => count($allProxies),
+            'available' => 0,
+            'imported' => 0,
+            'used' => 0,
+            'expired' => 0,
+            'expiring_soon' => 0,
+        ];
+
+        foreach ($allProxies as $proxy) {
+            $proxyId = $proxy['id'] ?? null;
+            $isImported = isset($importedMap[$proxyId]);
+
+            if (!$isImported && ($proxy['is_active'] ?? false)) {
+                $stats['available']++;
             }
-        });
+            if ($isImported) {
+                $stats['imported']++;
+                if ($importedMap[$proxyId]['is_used']) {
+                    $stats['used']++;
+                }
+            }
+            if (($proxy['days_remaining'] ?? null) === 0) {
+                $stats['expired']++;
+            }
+            $days = $proxy['days_remaining'] ?? null;
+            if ($days !== null && $days <= 7 && $days > 0) {
+                $stats['expiring_soon']++;
+            }
+        }
 
         return view('proxies.proxy-ipv4', [
             'proxyIPV4Data' => $proxyIPV4Data,
-            'proxies' => $filteredProxies,
+            'proxies' => array_values($proxies), // Re-index array
             'filters' => $request->only(['filter', 'sort']),
-            'stats' => [
-                'total' => count($proxyIPV4Data['proxies'] ?? []),
-                'available' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => !($p['is_imported'] ?? false) && ($p['is_active'] ?? false))),
-                'imported' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => $p['is_imported'] ?? false)),
-                'used' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['is_imported'] ?? false) && ($p['is_used'] ?? false))),
-                'expired' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['days_remaining'] ?? null) === 0)),
-                'expiring_soon' => count(array_filter($proxyIPV4Data['proxies'] ?? [], fn($p) => ($p['days_remaining'] ?? null) !== null && ($p['days_remaining'] ?? 0) <= 7 && ($p['days_remaining'] ?? 0) > 0)),
-            ]
+            'stats' => $stats
         ]);
     }
+
 
     /**
      * Import a ProxyIPV4 proxy to local database.

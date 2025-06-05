@@ -94,15 +94,57 @@
                         </div>
 
                         <div class="md:col-span-2">
-                            <label for="proxy_id" class="block text-sm font-medium text-text-secondary mb-1">Proxy (Optional)</label>
-                            <select id="proxy_id" name="proxy_id" class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
-                                <option value="">No Proxy</option>
-                                @foreach($availableProxies as $proxy)
-                                    <option value="{{ $proxy->id }}" {{ $emailAccount->proxy_id == $proxy->id ? 'selected' : '' }}>
-                                        {{ $proxy->ip_address }}:{{ $proxy->port }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label class="block text-sm font-medium text-text-secondary mb-3">Proxy (Optional)</label>
+
+                            @if($availableProxies->count() > 0)
+                                <!-- Current and Available Proxies Info -->
+                                <div class="mb-4 p-3 {{ $emailAccount->proxy_id ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200' }} border rounded-md">
+                                    <div class="flex items-center text-sm">
+                                        @if($emailAccount->proxy_id)
+                                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                            <span class="text-blue-700">
+                        Currently using proxy. <strong>{{ $availableProxies->count() }}</strong> proxies available to switch to.
+                    </span>
+                                        @else
+                                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                            <span class="text-green-700">
+                        <strong>{{ $availableProxies->count() }}</strong> available proxies ready to use
+                    </span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <select id="proxy_id" name="proxy_id" class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
+                                    <option value="">No Proxy</option>
+                                    @foreach($availableProxies as $proxy)
+                                        <option value="{{ $proxy->id }}" {{ $emailAccount->proxy_id == $proxy->id ? 'selected' : '' }}>
+                                            {{ $proxy->ip_address }}:{{ $proxy->port }}
+                                            @if($proxy->geolocation) - {{ $proxy->geolocation }} @endif
+                                            @if($proxy->source === 'proxy_ipv4') (ProxyIPV4) @else (Manual) @endif
+                                            @if($proxy->validation_status === 'valid') ✓ {{ $proxy->response_time }}ms @endif
+                                            @if($proxy->source === 'proxy_ipv4' && $proxy->getDaysRemaining() !== null)
+                                                - {{ $proxy->getDaysRemaining() }} days left
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                                        <div>
+                                            <div class="font-medium text-yellow-800">No available proxies</div>
+                                            <div class="text-sm text-yellow-700 mt-1">
+                                                All proxies are currently assigned to other email accounts.
+                                                <a href="{{ route('accounts.proxy.create') }}" class="underline hover:no-underline">Add more proxies</a>
+                                                to have more options.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="proxy_id" value="{{ $emailAccount->proxy_id }}">
+                            @endif
+
                             @error('proxy_id')
                             <div class="text-danger text-sm mt-1">{{ $message }}</div>
                             @enderror

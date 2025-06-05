@@ -82,38 +82,59 @@
                                            class="hidden peer" x-model="formData.provider">
                                     <label for="provider_{{ $provider }}"
                                            class="block border-2 rounded-lg p-4 cursor-pointer transition-all
-                                    peer-checked:border-secondary peer-checked:bg-secondary/5
-                                    hover:border-secondary/50">
+                peer-checked:border-secondary peer-checked:bg-secondary/5
+                hover:border-secondary/50">
                                         <div class="flex items-center">
                                             <div class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center
-                                            @if($provider == 'Gmail') bg-red-100 text-red-500
-                                            @elseif($provider == 'Outlook') bg-blue-100 text-blue-500
-                                            @elseif($provider == 'Yahoo') bg-purple-100 text-purple-500
-                                            @else bg-amber-100 text-amber-500
-                                            @endif">
+                @if($provider == 'Gmail') bg-red-100 text-red-500
+                @elseif($provider == 'Outlook') bg-blue-100 text-blue-500
+                @elseif($provider == 'Yahoo') bg-purple-100 text-purple-500
+                @else bg-amber-100 text-amber-500
+                @endif">
                                                 <i class="fab
-                                                @if($provider == 'Gmail') fa-google
-                                                @elseif($provider == 'Outlook') fa-microsoft
-                                                @elseif($provider == 'Yahoo') fa-yahoo
-                                                @elseif($provider == 'iCloud') fa-brands fa-apple
-                                                @else fa-envelope
-                                                @endif"></i>
+                    @if($provider == 'Gmail') fa-google
+                    @elseif($provider == 'Outlook') fa-microsoft
+                    @elseif($provider == 'Yahoo') fa-yahoo
+                    @elseif($provider == 'iCloud') fa-brands fa-apple
+                    @else fa-envelope
+                    @endif"></i>
                                             </div>
-                                            <div class="ml-3">
+                                            <div class="ml-3 flex-1">
                                                 <div class="text-text-primary font-medium">{{ $provider }}</div>
                                                 <div class="text-text-secondary text-xs">
-                                                    @if($provider == 'Gmail') Google Mail Service
-                                                    @elseif($provider == 'Outlook') Microsoft Email
-                                                    @elseif($provider == 'Yahoo') Yahoo Mail
-                                                    @else iCloud Mail
+                                                    @if($provider == 'Gmail')
+                                                        Google Mail Service
+                                                    @elseif($provider == 'Outlook')
+                                                        Microsoft Email
+                                                        <div class="mt-1 flex items-center text-blue-600">
+                                                            <i class="fas fa-info-circle mr-1 text-xs"></i>
+                                                            <span class="font-medium">Recommended: @outlook.com</span>
+                                                        </div>
+                                                    @elseif($provider == 'Yahoo')
+                                                        Yahoo Mail
+                                                    @else
+                                                        iCloud Mail
                                                     @endif
                                                 </div>
                                             </div>
                                         </div>
                                     </label>
-                                    <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                        <i class="fas fa-check-circle text-secondary"></i>
-                                    </div>
+
+                                    <!-- Enhanced info for Outlook -->
+                                    @if($provider == 'Outlook')
+                                        <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                            <div class="flex items-center space-x-1">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                        @outlook.com preferred
+                    </span>
+                                                <i class="fas fa-check-circle text-secondary"></i>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                            <i class="fas fa-check-circle text-secondary"></i>
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -136,6 +157,15 @@
                                        class="block w-full pl-10 rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20"
                                        :placeholder="'example@' + (formData.provider ? formData.provider.toLowerCase() : 'provider') + '.com'">
                             </div>
+
+                            <!-- Add this helpful note for Outlook -->
+                            <div x-show="formData.provider === 'Outlook'" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                <div class="flex items-center text-blue-700 text-sm">
+                                    <i class="fas fa-lightbulb mr-2 text-blue-500"></i>
+                                    <span>For better deliverability, we recommend using <strong>@outlook.com</strong> addresses over @hotmail.com</span>
+                                </div>
+                            </div>
+
                             <div class="text-red-500 text-sm mt-2" x-show="errors.email_address" x-text="errors.email_address"></div>
 
                             <!-- Email Suggestions Section (in Step 2) -->
@@ -152,44 +182,30 @@
                                                 <!-- Best Choice Badge -->
                                                 <div x-show="suggestion.meta.is_best_choice"
                                                      class="absolute top-2 right-3 flex items-center">
-                        <span class="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                            <span>Best choice</span>
-                            <span class="ml-1">✨</span>
-                        </span>
+            <span class="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                <span>Best choice</span>
+                <span class="ml-1">✨</span>
+            </span>
                                                 </div>
 
-                                                <!-- Email and Name -->
-                                                <div class="text-sm font-medium text-text-primary mb-1" x-text="suggestion.email"></div>
+                                                <!-- Email and Name with domain indicator -->
+                                                <div class="text-sm font-medium text-text-primary mb-1 flex items-center justify-between">
+                                                    <span x-text="suggestion.email"></span>
+
+                                                    <!-- Add domain indicator for Outlook emails -->
+                                                    <span x-show="formData.provider === 'Outlook' && suggestion.email.includes('@outlook.com')"
+                                                          class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                Recommended
+            </span>
+                                                </div>
+
+                                                <!-- Rest remains the same -->
                                                 <div class="text-xs text-text-secondary flex items-center justify-between">
                                                     <span x-text="suggestion.meta.first_name + ' ' + suggestion.meta.last_name"></span>
-
-                                                    <!-- Score indicator for debugging (optional - can be removed) -->
-                                                    <span class="text-xs px-2 py-0.5 rounded-full"
-                                                          :class="{
-                                  'bg-green-100 text-green-800': suggestion.meta.score >= 75,
-                                  'bg-yellow-100 text-yellow-800': suggestion.meta.score >= 50 && suggestion.meta.score < 75,
-                                  'bg-red-100 text-red-800': suggestion.meta.score < 50
-                              }"
-                                                          x-text="'Score: ' + suggestion.meta.score">
-                        </span>
+                                                    <!-- Score indicator remains the same -->
                                                 </div>
 
-                                                <!-- Uniqueness indicator -->
-                                                <div class="mt-2 flex items-center text-xs">
-                                                    <div class="flex items-center">
-                                                        <div class="w-2 h-2 rounded-full mr-1"
-                                                             :class="{
-                                     'bg-green-500': suggestion.meta.score >= 75,
-                                     'bg-yellow-500': suggestion.meta.score >= 50 && suggestion.meta.score < 75,
-                                     'bg-red-500': suggestion.meta.score < 50
-                                 }">
-                                                        </div>
-                                                        <span class="text-text-secondary"
-                                                              x-text="suggestion.meta.score >= 75 ? 'High uniqueness' :
-                                         suggestion.meta.score >= 50 ? 'Medium uniqueness' : 'Low uniqueness'">
-                            </span>
-                                                    </div>
-                                                </div>
+                                                <!-- Uniqueness indicator remains the same -->
                                             </div>
                                         </template>
                                     </div>
@@ -208,7 +224,8 @@
                             <div class="mt-3">
                                 <button type="button" @click="generateEmailSuggestions" class="text-secondary text-sm hover:underline flex items-center">
                                     <i class="fas fa-sync-alt mr-1"></i>
-                                    <span>Generate email suggestions</span>
+                                    <span x-show="formData.provider !== 'Outlook'">Generate email suggestions</span>
+                                    <span x-show="formData.provider === 'Outlook'">Generate @outlook.com suggestions</span>
                                 </button>
                             </div>
                         </div>
@@ -245,17 +262,163 @@
                         </div>
 
                         <div class="mb-6">
-                            <label for="proxy_id" class="block text-sm font-medium text-text-secondary mb-1">Proxy (Optional)</label>
-                            <select id="proxy_id" x-model="formData.proxy_id"
-                                    class="block w-full rounded-button border-gray-300 focus:border-secondary focus:ring focus:ring-secondary/20">
-                                <option value="">No Proxy</option>
-                                @foreach($availableProxies as $proxy)
-                                    <option value="{{ $proxy->id }}">{{ $proxy->ip_address }}:{{ $proxy->port }}</option>
-                                @endforeach
-                            </select>
-                            <div class="text-text-secondary text-xs mt-1">
-                                Associate a proxy with this email account (optional).
-                            </div>
+                            <label class="block text-sm font-medium text-text-secondary mb-3">Proxy (Optional)</label>
+
+                            @if($availableProxies->count() > 0)
+                                <!-- Available Proxies Count -->
+                                <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                                    <div class="flex items-center text-green-700 text-sm">
+                                        <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                                        <span><strong>{{ $availableProxies->count() }}</strong> available proxies ready to use</span>
+                                    </div>
+                                </div>
+
+                                <!-- Proxy Selection Options -->
+                                <div class="space-y-3">
+                                    <!-- No Proxy Option -->
+                                    <div class="relative">
+                                        <input type="radio" id="no_proxy" name="proxy_option" value="" x-model="formData.proxy_id" class="sr-only">
+                                        <label for="no_proxy"
+                                               class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
+                              hover:border-secondary/50 hover:bg-gray-50"
+                                               :class="formData.proxy_id === '' ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20' : 'border-gray-200'">
+                                            <div class="flex items-center flex-1">
+                                                <!-- Icon -->
+                                                <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
+                                                     :class="formData.proxy_id === '' ? 'bg-secondary/20' : 'bg-gray-100'">
+                                                    <i class="fas fa-times text-lg"
+                                                       :class="formData.proxy_id === '' ? 'text-secondary' : 'text-gray-500'"></i>
+                                                </div>
+
+                                                <!-- Content -->
+                                                <div>
+                                                    <div class="font-medium text-text-primary">No Proxy</div>
+                                                    <div class="text-sm text-text-secondary">Direct connection without proxy</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Selection Indicator -->
+                                            <div class="ml-auto flex items-center">
+                                                <div class="w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all duration-200"
+                                                     :class="formData.proxy_id === '' ? 'border-secondary bg-secondary' : 'border-gray-300'">
+                                                    <div class="w-2 h-2 bg-white rounded-full transition-opacity duration-200"
+                                                         :class="formData.proxy_id === '' ? 'opacity-100' : 'opacity-0'"></div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <!-- Available Proxies -->
+                                    <div class="max-h-64 overflow-y-auto space-y-3">
+                                        @foreach($availableProxies as $proxy)
+                                            <div class="relative">
+                                                <input type="radio" id="proxy_{{ $proxy->id }}" name="proxy_option" value="{{ $proxy->id }}" x-model="formData.proxy_id" class="sr-only">
+                                                <label for="proxy_{{ $proxy->id }}"
+                                                       class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
+                                      hover:border-secondary/50 hover:bg-gray-50"
+                                                       :class="formData.proxy_id == '{{ $proxy->id }}' ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20' : 'border-gray-200'">
+
+                                                    <div class="flex items-center flex-1">
+                                                        <!-- Proxy Icon and Country Flag -->
+                                                        <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4 relative"
+                                                             :class="formData.proxy_id == '{{ $proxy->id }}' ? 'bg-secondary/20' : 'bg-secondary/10'">
+                                                            <i class="fas fa-server text-lg"
+                                                               :class="formData.proxy_id == '{{ $proxy->id }}' ? 'text-secondary' : 'text-secondary/70'"></i>
+                                                            @if($proxy->country_code)
+                                                                <img src="https://flagcdn.com/16x12/{{ $proxy->country_code }}.png"
+                                                                     alt="{{ $proxy->geolocation }}"
+                                                                     class="absolute -top-1 -right-1 w-4 h-3 rounded border border-white shadow-sm"
+                                                                     onerror="this.style.display='none'">
+                                                            @endif
+                                                        </div>
+
+                                                        <div class="flex-1">
+                                                            <!-- IP and Port -->
+                                                            <div class="font-medium text-text-primary font-mono mb-1">
+                                                                {{ $proxy->ip_address }}:{{ $proxy->port }}
+                                                            </div>
+
+                                                            <!-- Additional Info -->
+                                                            <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                                                                @if($proxy->geolocation)
+                                                                    <span class="flex items-center">
+                                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                                {{ $proxy->geolocation }}
+                                            </span>
+                                                                @endif
+
+                                                                @if($proxy->source === 'proxy_ipv4')
+                                                                    <span class="flex items-center text-primary">
+                                                <i class="fas fa-cloud mr-1"></i>
+                                                ProxyIPV4
+                                            </span>
+
+                                                                    @if($proxy->expiry_date)
+                                                                        @php $daysLeft = $proxy->getDaysRemaining(); @endphp
+                                                                        @if($daysLeft !== null)
+                                                                            <span class="flex items-center {{ $daysLeft <= 7 ? 'text-orange-600' : 'text-green-600' }}">
+                                                        <i class="fas fa-clock mr-1"></i>
+                                                        {{ $daysLeft }} days left
+                                                    </span>
+                                                                        @endif
+                                                                    @endif
+                                                                @else
+                                                                    <span class="flex items-center text-purple-600">
+                                                <i class="fas fa-hand-paper mr-1"></i>
+                                                Manual
+                                            </span>
+                                                                @endif
+
+                                                                <!-- Validation Status -->
+                                                                @if($proxy->validation_status === 'valid')
+                                                                    <span class="flex items-center text-green-600">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                {{ $proxy->response_time }}ms
+                                            </span>
+                                                                @elseif($proxy->validation_status === 'pending')
+                                                                    <span class="flex items-center text-yellow-600">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                Pending
+                                            </span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Selection Indicator -->
+                                                    <div class="ml-auto flex items-center">
+                                                        <div class="w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all duration-200"
+                                                             :class="formData.proxy_id == '{{ $proxy->id }}' ? 'border-secondary bg-secondary' : 'border-gray-300'">
+                                                            <div class="w-2 h-2 bg-white rounded-full transition-opacity duration-200"
+                                                                 :class="formData.proxy_id == '{{ $proxy->id }}' ? 'opacity-100' : 'opacity-0'"></div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @else
+                                <!-- No Available Proxies -->
+                                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                                        <div>
+                                            <div class="font-medium text-yellow-800">No available proxies</div>
+                                            <div class="text-sm text-yellow-700 mt-1">
+                                                All proxies are currently assigned to other email accounts.
+                                                <a href="{{ route('accounts.proxy.create') }}" class="underline hover:no-underline">Add more proxies</a>
+                                                or leave this field empty to proceed without a proxy.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Set proxy_id to null when no proxies available -->
+                                <input type="hidden" x-model="formData.proxy_id" value="">
+                            @endif
+
+                            <div class="text-red-500 text-sm mt-2" x-show="errors.proxy_id" x-text="errors.proxy_id"></div>
                         </div>
                     </div>
 

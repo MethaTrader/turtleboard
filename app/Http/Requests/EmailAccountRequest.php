@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\Proxy;
 
 class EmailAccountRequest extends FormRequest
 {
@@ -32,7 +33,27 @@ class EmailAccountRequest extends FormRequest
                 Rule::unique('email_accounts')->ignore($this->emailAccount),
             ],
             'password' => ['required', 'string', 'min:6'],
-            'proxy_id' => ['nullable', 'exists:proxies,id'],
+            'proxy_id' => [
+                'nullable',
+                'exists:proxies,id',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        // Check if this proxy is already assigned to another email account
+                        $isAssigned = \App\Models\EmailAccount::where('proxy_id', $value)
+                            ->when($this->emailAccount, function ($query) {
+                                // Exclude current email account when updating
+                                return $query->where('id', '!=', $this->emailAccount->id);
+                            })
+                            ->exists();
+
+                        if ($isAssigned) {
+                            $proxy = Proxy::find($value);
+                            $assignedTo = \App\Models\EmailAccount::where('proxy_id', $value)->first();
+                            $fail("This proxy ({$proxy->ip_address}:{$proxy->port}) is already assigned to {$assignedTo->email_address}");
+                        }
+                    }
+                }
+            ],
             'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],

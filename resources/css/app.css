@@ -173,3 +173,49 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
+/* Enhanced radio button styling for proxy selection */
+.proxy-selection input[type="radio"]:checked + label {
+    border-color: theme('colors.secondary');
+    background-color: theme('colors.secondary' / 5%);
+}
+
+.proxy-selection input[type="radio"]:checked + label .selection-indicator {
+    border-color: theme('colors.secondary');
+    background-color: theme('colors.secondary');
+}
+
+.proxy-selection input[type="radio"]:checked + label .selection-dot {
+    opacity: 1;
+}
+
+/* Enhanced proxy selection styling */
+.proxy-selection-card {
+    transition: all 0.2s ease;
+}
+
+.proxy-selection-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.proxy-selection-card.selected {
+    border-color: theme('colors.secondary') !important;
+    background-color: theme('colors.secondary' / 5%) !important;
+    box-shadow: 0 0 0 3px theme('colors.secondary' / 20%);
+}
+
+/* Radio button indicator animations */
+.radio-indicator {
+    transition: all 0.2s ease;
+}
+
+.radio-indicator.selected {
+    border-color: theme('colors.secondary');
+    background-color: theme('colors.secondary');
+    transform: scale(1.1);
+}
+
+.radio-dot {
+    transition: opacity 0.2s ease;
+}

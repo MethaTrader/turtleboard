@@ -55,7 +55,13 @@ class EmailGeneratorController extends Controller
         $domains = $this->domains[$provider];
 
         if (is_array($domains)) {
-            // For Outlook, randomly choose between outlook.com and hotmail.com
+            // For Outlook, favor outlook.com over hotmail.com (80% vs 20%)
+            if ($provider === 'outlook') {
+                $random = mt_rand(1, 100);
+                return $random <= 80 ? 'outlook.com' : 'hotmail.com';
+            }
+
+            // For other providers with multiple domains, use random selection
             return $domains[array_rand($domains)];
         }
 

@@ -68,13 +68,19 @@ class EmailAccountController extends Controller
     public function create(): View
     {
         $providers = EmailAccount::PROVIDERS;
-        $availableProxies = Proxy::whereDoesntHave('emailAccount')->get();
+
+        // Get only available proxies (not assigned to any email account)
+        $availableProxies = Proxy::whereDoesntHave('emailAccount')
+            ->where('validation_status', '!=', 'invalid') // Exclude invalid proxies
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('email-accounts.create', [
             'providers' => $providers,
             'availableProxies' => $availableProxies,
         ]);
     }
+
 
     /**
      * Store a newly created email account in storage.
@@ -103,12 +109,17 @@ class EmailAccountController extends Controller
     public function edit(EmailAccount $emailAccount): View
     {
         $providers = EmailAccount::PROVIDERS;
+
+        // Get available proxies + the current proxy assigned to this email account
         $availableProxies = Proxy::where(function ($query) use ($emailAccount) {
             $query->whereDoesntHave('emailAccount')
                 ->orWhereHas('emailAccount', function ($q) use ($emailAccount) {
                     $q->where('id', $emailAccount->id);
                 });
-        })->get();
+        })
+            ->where('validation_status', '!=', 'invalid') // Exclude invalid proxies
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('email-accounts.edit', [
             'emailAccount' => $emailAccount,
